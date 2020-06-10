@@ -9,8 +9,17 @@ END detect_fs_test;
 ARCHITECTURE detect_fs_test_bench OF detect_fs_test IS
 
 COMPONENT detect_fs
-	PORT(XDSD,MCLK,BCK,LRCK,CK_SEL,CPOK : IN std_logic;
-		FS : OUT std_logic_vector(3 downto 0));
+PORT(
+		CLK49M		: in std_logic;
+		XDSD			: in std_logic;
+		MCLK			: in std_logic;
+		BCK			: in std_logic;
+		LRCK			: in std_logic;
+		CK_SEL		: in std_logic;
+		CPOK			: IN std_logic;
+		DSD64_128	: OUT std_logic;
+		DSD256_512	: OUT std_logic;
+		FS				: OUT std_logic_vector(3 downto 0));
 END COMPONENT;
 	
 constant cycle	: Time := 40ns;
@@ -27,12 +36,12 @@ constant stb	: Time := 2ns;
 
 constant i : integer := 0;
 
-signal XDSD,MCLK,BCK,LRCK,CPOK,CK_SEL:std_logic;
---signal fs44,fs88,fs176:std_logic;
+signal clk49m,XDSD,MCLK,BCK,LRCK,CPOK,CK_SEL:std_logic;
+signal dsd64_128,dsd256_512 : std_logic;
 
 BEGIN
 
-	sm1: detect_fs port map (CLK49M=> clk49m, XDSD=>XDSD,MCLK=>MCLK,BCK=>BCK,LRCK=>LRCK,CK_SEL=>CK_SEL,CPOK=>CPOK);
+	sm1: detect_fs port map (CLK49M=>clk49m, XDSD=>XDSD, MCLK=>MCLK, BCK=>BCK, LRCK=>LRCK, CK_SEL=>CK_SEL, CPOK=>CPOK, DSD64_128=>dsd64_128, DSD256_512=>dsd256_512);
 	
 	PROCESS BEGIN
 		MCLK <= '0';
@@ -74,6 +83,12 @@ BEGIN
 			wait for cycle*2;
 		end loop;
 		
+		for i in 0 to 7 loop
+			BCK <= '0';
+			wait for cycle;
+			BCK <= '1';
+			wait for cycle;
+		end loop;
 		
 		wait;
 	end process;

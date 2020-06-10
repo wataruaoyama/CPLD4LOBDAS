@@ -163,16 +163,17 @@ end process;
 --	end if;
 --end process;
 
-process(CPOK,CLK49M) begin
+process(CPOK,CLK49M,dcount) begin
 	if CPOK = '0' then
 		d256_512 <= '0';
 		d64_128 <= '0';
 	elsif CLK49M'event and CLK49M='1' then
 		if ebck = '1' then
---			if dcount = "0000" then			-- DSD512
---				d256_512 <= '1';
---				d64_128 <= '0';
-			if dcount = "0010" then		-- DSD256
+			if dcount = "0000" then			-- DSD512
+				d256_512 <= '1';
+				d64_128 <= '1';
+			elsif dcount = "0010" then		-- DSD256
+--			if dcount = "0010" then		-- DSD256
 				d256_512 <= '1';
 				d64_128 <= '0';
 			elsif dcount = "0100" then		-- DSD128
