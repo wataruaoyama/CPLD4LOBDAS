@@ -60,6 +60,7 @@ process(XRST,CLK49M,XDSD) begin
 				f44_48 <= '1';
 			elsif (fcount = "0000011110" or fcount = "0000011111" or fcount = "0001000000" or fcount = "0000100001") then
 				f44_48 <= '1';
+--			elsif (fcount = "1000101010" or fcount = "1000101011" or fcount = "1000101100" or fcount = "1000101101" or fcount = "1000101110" or fcount = "1000101111") then
 			elsif (fcount = "1000101011" or fcount = "1000101100" or fcount = "1000101101" or fcount = "1000101110") then
 				f44_48 <= '0';
 			elsif (fcount = "0100010101" or fcount = "0100010110" or fcount = "0100010110" or fcount = "0100010111") then
