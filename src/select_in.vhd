@@ -46,7 +46,7 @@ ARCHITECTURE RTL OF select_in IS
 
 BEGIN
 process(BBB_MCLK,BBB_BCLK,BBB_LRCK,BBB_DATA,RJ4_MCLK,RJ4_BCLK,RJ4_LRCK,RJ4_DATA,
-		  USB_MCLK,USB_BCLK,USB_LRCK,USB_DATA,INSELO,CHLR,USB_DP) begin
+		  USB_MCLK,USB_BCLK,USB_LRCK,USB_DATA,INSELO,CHLR,DET_DP) begin
 	if inselo = "00" then
 		if CHLR = '0' then		
 			MCLK1 <= USB_MCLK;
@@ -79,32 +79,98 @@ process(BBB_MCLK,BBB_BCLK,BBB_LRCK,BBB_DATA,RJ4_MCLK,RJ4_BCLK,RJ4_LRCK,RJ4_DATA,
 			end if;
 		end if;
 	elsif inselo = "01" then
-		MCLK1 <= RJ4_MCLK;
-		MCLK2 <= RJ4_MCLK;
-		BCLK1 <= RJ4_BCLK;
-		BCLK2 <= RJ4_BCLK;
-		LRCK1 <= RJ4_LRCK;
-		LRCK2 <= RJ4_LRCK;
-		DATA1 <= RJ4_DATA;
-		DATA2 <= RJ4_DATA;		
+		if CHLR = '0' then
+			MCLK1 <= RJ4_MCLK;
+			MCLK2 <= RJ4_MCLK;
+			BCLK1 <= RJ4_BCLK;
+			BCLK2 <= RJ4_BCLK;
+			LRCK1 <= RJ4_LRCK;
+			LRCK2 <= RJ4_LRCK;
+			DATA1 <= RJ4_DATA;
+			DATA2 <= RJ4_DATA;
+		else
+			if DET_DP = '1' then
+				MCLK1 <= RJ4_MCLK;
+				MCLK2 <= RJ4_MCLK;
+				BCLK1 <= RJ4_BCLK;
+				BCLK2 <= RJ4_BCLK;
+				LRCK1 <= RJ4_DATA;
+				LRCK2 <= RJ4_DATA;
+				DATA1 <= RJ4_LRCK;
+				DATA2 <= RJ4_LRCK;
+			else
+				MCLK1 <= RJ4_MCLK;
+				MCLK2 <= RJ4_MCLK;
+				BCLK1 <= RJ4_BCLK;
+				BCLK2 <= RJ4_BCLK;
+				LRCK1 <= RJ4_LRCK;
+				LRCK2 <= RJ4_LRCK;
+				DATA1 <= RJ4_DATA;
+				DATA2 <= RJ4_DATA;
+			end if;
+		end if;
 	elsif inselo = "10" then
-		MCLK1 <= BBB_MCLK;
-		MCLK2 <= BBB_MCLK;
-		BCLK1 <= BBB_BCLK;
-		BCLK2 <= BBB_BCLK;
-		LRCK1 <= BBB_LRCK;
-		LRCK2 <= BBB_LRCK;
-		DATA1 <= BBB_DATA;
-		DATA2 <= BBB_DATA;		
+		if CHLR = '0' then
+			MCLK1 <= BBB_MCLK;
+			MCLK2 <= BBB_MCLK;
+			BCLK1 <= BBB_BCLK;
+			BCLK2 <= BBB_BCLK;
+			LRCK1 <= BBB_LRCK;
+			LRCK2 <= BBB_LRCK;
+			DATA1 <= BBB_DATA;
+			DATA2 <= BBB_DATA;
+		else
+			if DET_DP = '1' then
+				MCLK1 <= BBB_MCLK;
+				MCLK2 <= BBB_MCLK;
+				BCLK1 <= BBB_BCLK;
+				BCLK2 <= BBB_BCLK;
+				LRCK1 <= BBB_DATA;
+				LRCK2 <= BBB_DATA;
+				DATA1 <= BBB_LRCK;
+				DATA2 <= BBB_LRCK;
+			else
+				MCLK1 <= BBB_MCLK;
+				MCLK2 <= BBB_MCLK;
+				BCLK1 <= BBB_BCLK;
+				BCLK2 <= BBB_BCLK;
+				LRCK1 <= BBB_LRCK;
+				LRCK2 <= BBB_LRCK;
+				DATA1 <= BBB_DATA;
+				DATA2 <= BBB_DATA;
+			end if;
+		end if;
 	elsif inselo = "11" then
-		MCLK1 <= USB_MCLK;
-		MCLK2 <= USB_MCLK;
-		BCLK1 <= USB_BCLK;
-		BCLK2 <= USB_BCLK;
-		LRCK1 <= USB_LRCK;
-		LRCK2 <= USB_LRCK;
-		DATA1 <= USB_DATA;
-		DATA2 <= USB_DATA;
+		if CHLR = '0' then
+			MCLK1 <= USB_MCLK;
+			MCLK2 <= USB_MCLK;
+			BCLK1 <= USB_BCLK;
+			BCLK2 <= USB_BCLK;
+			LRCK1 <= USB_LRCK;
+			LRCK2 <= USB_LRCK;
+			DATA1 <= USB_DATA;
+			DATA2 <= USB_DATA;
+		else
+			if DET_DP = '1' then
+				MCLK1 <= USB_MCLK;
+				MCLK2 <= USB_MCLK;
+				BCLK1 <= USB_BCLK;
+				BCLK2 <= USB_BCLK;
+				LRCK1 <= USB_DATA;
+				LRCK2 <= USB_DATA;
+				DATA1 <= USB_LRCK;
+				DATA2 <= USB_LRCK;
+			else
+				MCLK1 <= USB_MCLK;
+				MCLK2 <= USB_MCLK;
+				BCLK1 <= USB_BCLK;
+				BCLK2 <= USB_BCLK;
+				LRCK1 <= USB_LRCK;
+				LRCK2 <= USB_LRCK;
+				DATA1 <= USB_DATA;
+				DATA2 <= USB_DATA;
+			end if;
+		end if;
 	else
 		MCLK1 <= USB_MCLK;
 		MCLK2 <= USB_MCLK;
