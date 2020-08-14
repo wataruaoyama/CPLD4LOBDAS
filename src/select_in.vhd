@@ -23,7 +23,7 @@ PORT(
 		USB_DP	: in std_logic;
 		USB_D64	: in std_logic;
 		DET_FS	: in std_logic_vector(3 downto 0);
-		DET_DP	: in std_logic;
+--		DET_DP	: in std_logic;
 		DET_D256	: in std_logic;
 		DET_D64	: in std_logic;
 		CHLR		: in std_logic;
@@ -44,10 +44,24 @@ END select_in;
 
 ARCHITECTURE RTL OF select_in IS
 
+component detdsd
+PORT(
+		xrst			: in std_logic;
+--		mclk			: in std_logic;
+		bclk			: in std_logic;
+		lrck			: in std_logic;
+		dp				: out std_logic
+);
+END component;
+
 signal iMCLK1,iBCLK1,iLRCK1,iDATA1	: std_logic;
 signal iMCLK2,iBCLK2,iLRCK2,iDATA2	: std_logic;
+signal DET_DP : std_logic;
 
 BEGIN
+
+D1 : detdsd port map(xrst=>xrst, bclk=>iBCLK1, lrck=>iLRCK1, dp=>DET_DP);
+
 process(BBB_MCLK,BBB_BCLK,BBB_LRCK,BBB_DATA,RJ4_MCLK,RJ4_BCLK,RJ4_LRCK,RJ4_DATA,
 		  USB_MCLK,USB_BCLK,USB_LRCK,USB_DATA,INSELO) begin
 	if inselo = "00" then
@@ -107,7 +121,7 @@ process (iLRCK1,iDATA1,iLRCK2,iDATA2,DET_DP,CHLR) begin
 		DATA1 <= iDATA1;
 		DATA2 <= iDATA2;
 	else
-		if DET_DP = '0' or USB_DP = '0' then
+		if DET_DP = '0' then
 			LRCK1 <= iLRCK1;
 			LRCK2 <= iLRCK2;
 			DATA1 <= iDATA1;

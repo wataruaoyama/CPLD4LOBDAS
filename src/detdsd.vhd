@@ -6,7 +6,7 @@ USE IEEE.std_logic_unsigned.ALL;
 ENTITY detdsd IS
 PORT(
 		xrst			: in std_logic;
-		mclk			: in std_logic;
+--		mclk			: in std_logic;
 		bclk			: in std_logic;
 		lrck			: in std_logic;
 		dp				: out std_logic
@@ -17,13 +17,13 @@ ARCHITECTURE RTL OF detdsd IS
 
 signal dp_int	: std_logic;
 signal count	: std_logic_vector(4 downto 0);
-signal sreg		: std_logic_vector(15 downto 0);
+signal sreg		: std_logic_vector(31 downto 0);
 
 BEGIN
 
 process(bclk) begin
 	if(bclk'event and bclk = '1') then
-		sreg <= sreg(14 downto 0) & lrck;
+		sreg <= sreg(30 downto 0) & lrck;
 	end if;
 end process;
 
@@ -47,11 +47,11 @@ process(bclk,xrst) begin
 		dp_int <= '0';
 	elsif bclk'event and bclk = '1' then
 		if dp_int = '0' then
-			if sreg = "0110100101101010" then
+			if sreg = "01101001011010100110100101101010" then
 				dp_int <= '1';
-			elsif sreg = "0101010101010101" then
+			elsif sreg = "01010101010101010101010101010101" then
 				dp_int <= '1';
-			elsif sreg = "0011001100110011" then
+			elsif sreg = "00110011001100110011001100110011" then
 				dp_int <= '1';
 			else
 				dp_int <= dp_int;
