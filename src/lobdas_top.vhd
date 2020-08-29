@@ -193,7 +193,7 @@ PORT(
 		USB_DP	: in std_logic;
 		USB_D64	: in std_logic;
 		DET_FS	: in std_logic_vector(3 downto 0);
---		DET_DP	: in std_logic;
+		DET_DP	: in std_logic;
 		DET_D256	: in std_logic;
 		DET_D64	: in std_logic;
 		CHLR		: in std_logic;
@@ -290,14 +290,14 @@ SEL : select_in port map(xrst=>xrst, INSELO=>inselo, BBB_MCLK=>bbb_mclk, BBB_BCL
 								 RJ4_BCLK=>rj4_bclk, RJ4_LRCK=>rj4_lrck, RJ4_MCLK=>rj4_mclk, 
 								 USB_DATA=>usb_data, USB_MCLK=>usb_mclk, USB_BCLK=>usb_bclk, 
 								 USB_LRCK=>usb_lrck, USB_FS=>f, USB_DP=>dsdon, USB_D64=>d64_128,
-								 DET_FS=>det_fs, DET_D256=> det_d256, DET_D64=>det_d64, CHLR=>chlr, LRCK1=>ilrck1,
+								 DET_FS=>det_fs, DET_DP=>det_dp, DET_D256=> det_d256, DET_D64=>det_d64, CHLR=>chlr, LRCK1=>ilrck1,
 								 DATA1=>data1, BCLK1=>ibclk1, MCLK1=>imclk1, LRCK2=>lrck2, DATA2=>data2,
 								 BCLK2=>bclk2, MCLK2=>mclk2, FS=>ifs, DP=>idp, D256_512=>id256_512, D64_128=>id64_128); 
 
 DET1 : detect_fs port map(CLK49M=>clk49m, XDSD=>xdsd, MCLK=>imclk1, BCK=>ibclk1, LRCK=>ilrck1, CK_SEL=>ck_sel, 
 								  CPOK=>xrst, DSD64_128=>det_d64, DSD256_512=>det_d256, FS=>det_fs);
 								  
---DET2 : detdsd port map(xrst=>xrst, mclk=>imclk1, bclk=>ibclk1, lrck=>ilrck1, dp=>det_dp);
+DET2 : detdsd port map(xrst=>xrst, mclk=>imclk1, bclk=>ibclk1, lrck=>ilrck1, dp=>det_dp);
 
 FS1 : fs44_48 port map(XRST=>xrst, CLK49M=>clk49m, XDSD=>xdsd, LRCK=>ilrck1, CK_SEL=>ck_sel);
 
