@@ -14,7 +14,9 @@ PORT(
 		CPOK			: IN std_logic;
 		DSD64_128	: OUT std_logic;
 		DSD256_512	: OUT std_logic;
-		FS				: OUT std_logic_vector(3 downto 0));
+		FS				: OUT std_logic_vector(3 downto 0);
+		--bck_count
+		BCK16			: out std_Logic);
 END detect_fs;
 
 ARCHITECTURE RTL OF detect_fs IS
@@ -27,6 +29,12 @@ signal sreg : std_logic_vector(1 downto 0);
 signal dcount : std_logic_vector(3 downto 0);
 signal dbck : std_logic_vector(2 downto 0);
 signal ebck : std_logic;
+
+--bck_count
+signal bck_count : std_logic_vector(4 downto 0);
+signal shift : std_logic_vector(2 downto 0);
+signal ibck16 : std_logic;
+signal latch_en : std_logic;
 
 BEGIN
 
@@ -63,16 +71,21 @@ process(CPOK,XDSD,fcount,CK_SEL) begin
 				when "001000000" => q <= "0101";	--176.4kHz
 				when "000111111" => q <= "0101";	--176.4kHz
 				when "000011111" => q <= "0111";	--352.8kHz
-				when others => q <= "XXXX";
+				When "000100000" => q <= "0111";	--352.8kHz
+				when others => q <= null;	--"XXXX";
 			end case;
 		else
 			case fcount is
 				when "101111111" => q <= "0000";	--32kHz
 				when "011111111" => q <= "0010";	--48kHz
+				when "100000000" => q <= "0010";	--48kHz
 				when "001111111" => q <= "0100";	--96kHz
+				When "010000000" => q <= "0100";	--96kHz
 				when "000111111" => q <= "0110";	--192kHz
+				when "001000000" => q <= "0110";	--192kHz
 				when "000011111" => q <= "1000";	--384kHz
-				When others => q <= "XXXX";
+				when "000100000" => q <= "1000";
+				When others => q <= null;	--"XXXX";
 			end case;
 		end if;
 	end if;
@@ -130,42 +143,6 @@ process(CPOK,CLK49M,XDSD) begin
 	end if;
 end process;
 
---process(MCLK) begin
---	if MCLK'event and MCLK='1' then
---		dbck <= dbck(1 downto 0) & BCK;
---	end if;
---end process;
---
---ebck <= dbck(2) and not dbck(1);
---
---process(CPOK,MCLK,XDSD) begin
---	if CPOK = '0' or XDSD = '1' then
---		dcount <= "0000";
---	elsif MCLK'event and MCLK='1' then
---		if dbck(2) = '0' then
---			dcount <= "0000";
---		else
---			dcount <= dcount + '1';
---		end if;
---	end if;
---end process;
-
---process(CPOK,MCLK) begin
---	if CPOK = '0' then
---		d64_128 <= '0';
---	elsif MCLK'event and MCLK='1' then
---		if ebck = '1' then
---			if dcount = "0001" then
---				d64_128 <= '1';
---			elsif dcount = "0011" then
---				d64_128 <= '0';
---			end if;
---		else
---			d64_128 <= d64_128;
---		end if;
---	end if;
---end process;
-
 process(CPOK,CLK49M,dcount) begin
 	if CPOK = '0' then
 		d256_512 <= '0';
@@ -196,6 +173,50 @@ end process;
 DSD64_128 <= d64_128;
 DSD256_512 <= d256_512;
 
+--bck_count
+--	process(CPOK, BCK) begin
+--		if (CPOK = '0') then
+--			bck_count <= "00000";
+--		elsif (BCK'event and BCK='1') then
+--			if (XDSD = '0') then
+--				if (LRCK = '1') then
+--					bck_count <= bck_count + 1;
+--				else
+--					bck_count <= "00000";
+--				end if;
+--			else
+--				bck_count <= "00000";
+--			end if;
+--		end if;
+--	end process;
+--	
+--	process(CPOK, CLK49M) begin
+--		if (CPOK = '0') then
+--			shift <= "000";
+--		elsif (CLK49M'event and CLK49M='1') then
+--			shift(0) <= lrck;
+--			shift(1) <= shift(0);
+--			shift(2) <= shift(1);
+--		end if;
+--	end process;
+--	
+--	latch_en <= not shift(1) and shift(2);
+--	
+--	process(CPOK, CLK49M) begin
+--		if (CPOK = '0') then
+--			ibck16 <= '0';
+--		elsif (CLK49M'event and CLK49M='1') then
+--			if (latch_en = '1') then
+--				if (bck_count = "10000") then
+--					ibck16 <= '1';
+--				else
+--					ibck16 <= '0';
+--				end if;
+--			end if;
+--		end if;
+--	end process;
+--	
+--	bck16 <= ibck16;
 end RTL;
 			
 				

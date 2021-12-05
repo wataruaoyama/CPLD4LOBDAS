@@ -127,11 +127,13 @@ PORT(
 	D64_128	: in std_logic;
 	DSDON		: in std_logic;
 	F			: in std_logic_vector(3 downto 0);	
+	BCK16		: in std_logic;
 	ready		: out  std_logic;                     	-- back end system ready signal
 	data_out	: out std_logic_vector(7 DOWNTO 0); 	--data to i2c_slave module
 	INSELO	: out std_logic_vector(1 downto 0);
 	RSV2		: out std_logic;
-	RSV1		: out std_logic
+	RSV1		: out std_logic;
+	MCLKEN	: out std_logic
 );
 end component;
 
@@ -147,7 +149,8 @@ PORT(
 --		ov96k			: out std_logic;
 		DSD64_128	: OUT std_logic;
 		DSD256_512	: OUT std_logic;
-		FS				: OUT std_logic_vector(3 downto 0));
+		FS				: OUT std_logic_vector(3 downto 0);
+		BCK16			: OUT std_logic);
 END component;
 
 component detdsd
@@ -261,6 +264,10 @@ signal id64_128			: std_logic;
 signal idp					: std_logic;
 signal ifs					: std_logic_vector(3 downto 0);
 signal inselo				: std_logic_vector(1 downto 0);
+signal ibclk2				: std_logic;
+signal imclk2				: std_logic;
+signal mclken				: std_logic;
+signal bck16				: std_logic;
 
 begin
 
@@ -282,8 +289,8 @@ R1 : reg_ctrl port map(reset=>rst, sysclk=>clk49m, start=>start, stop=>stop, r_w
 							  DSDSEL0=>dsdsel0, DIF2=>dif2, DIF1=>dif1, DIF0=>dif0, 
 							  DSDPATH=>dsdpath, GC1=>gc1, GC0=>gc0, DEVNAME=>devname, CHLR=>chlr, 
 							  INSEL=>insel, OPT0=>opt0, OPT1=>opt1, PLUGED=>pluged, D256_512=>id256_512, D64_128=>id64_128,
-							  DSDON=>idp, F=>ifs, ready=>ready,data_out=>data_out, INSELO=>inselo,
-							  RSV2=>rsv2, RSV1=>rsv1);
+							  DSDON=>idp, F=>ifs, BCK16=>bck16, ready=>ready,data_out=>data_out, INSELO=>inselo,
+							  RSV2=>rsv2, RSV1=>rsv1, MCLKEN=>mclken);
 
 SEL : select_in port map(xrst=>xrst, INSELO=>inselo, BBB_MCLK=>bbb_mclk, BBB_BCLK=>bbb_bclk, 
 								 BBB_LRCK=>bbb_lrck, BBB_DATA=>bbb_data, RJ4_DATA=>rj4_data, 
@@ -292,10 +299,10 @@ SEL : select_in port map(xrst=>xrst, INSELO=>inselo, BBB_MCLK=>bbb_mclk, BBB_BCL
 								 USB_LRCK=>usb_lrck, USB_FS=>f, USB_DP=>dsdon, USB_D64=>d64_128,
 								 DET_FS=>det_fs, DET_DP=>det_dp, DET_D256=> det_d256, DET_D64=>det_d64, CHLR=>chlr, LRCK1=>ilrck1,
 								 DATA1=>data1, BCLK1=>ibclk1, MCLK1=>imclk1, LRCK2=>lrck2, DATA2=>data2,
-								 BCLK2=>bclk2, MCLK2=>mclk2, FS=>ifs, DP=>idp, D256_512=>id256_512, D64_128=>id64_128); 
+								 BCLK2=>ibclk2, MCLK2=>imclk2, FS=>ifs, DP=>idp, D256_512=>id256_512, D64_128=>id64_128); 
 
 DET1 : detect_fs port map(CLK49M=>clk49m, XDSD=>xdsd, MCLK=>imclk1, BCK=>ibclk1, LRCK=>ilrck1, CK_SEL=>ck_sel, 
-								  CPOK=>xrst, DSD64_128=>det_d64, DSD256_512=>det_d256, FS=>det_fs);
+								  CPOK=>xrst, DSD64_128=>det_d64, DSD256_512=>det_d256, FS=>det_fs, BCK16=>bck16);
 								  
 DET2 : detdsd port map(xrst=>xrst, mclk=>imclk1, bclk=>ibclk1, lrck=>ilrck1, dp=>det_dp);
 
@@ -303,13 +310,34 @@ FS1 : fs44_48 port map(XRST=>xrst, CLK49M=>clk49m, XDSD=>xdsd, LRCK=>ilrck1, CK_
 
 ESP : espReset PORT map(XRST =>xrst, CLK49M=>clk49m, ESPRST=>esprst);
 
-MCLK1 <= imclk1;
+--MCLK1 <= imclk1;
 BCLK1 <= ibclk1;
+BCLK2 <= ibclk2;
 LRCK1 <= ilrck1;
 DP <= idp;
 xdsd <= not idp;
 
-TP1 <= inselo(0);
-TP2 <= inselo(1);
+--TP1 <= inselo(0);
+--TP2 <= inselo(1);
+
+process(DEVNAME, idp, ibclk1, ibclk2, imclk1, imclk2, mclken) begin
+	if (DEVNAME(2 downto 0) = "011") then	-- BD34301EKV
+		if (mclken = '1') then
+			if (idp = '1') then
+				MCLK1 <= ibclk1;
+				MCLK2 <= ibclk2;
+			else
+				MCLK1 <= imclk1;
+				MCLK2 <= imclk2;
+			end if;
+		else
+			MCLK1 <= '0';
+			MCLK2 <= '0';
+		end if;
+	else
+		MCLK1 <= imclk1;
+		MCLK2 <= imclk2;
+	end if;
+end process;
 
 end RTL;

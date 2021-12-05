@@ -5,8 +5,8 @@ USE IEEE.std_logic_unsigned.ALL;
 
 ENTITY reg_ctrl IS
 PORT(
-	reset		: in  std_logic;                     	-- System Reset
-	sysclk		: in std_logic;
+	reset		: in std_logic;                     	-- System Reset
+	sysclk	: in std_logic;
 	start   	: in std_logic;                     	-- start of the i2c cycle
 	stop    	: in std_logic;                     	-- stop the i2c cycle
 	r_w     	: in std_logic;                     	-- read/write signal to the reg_map bloc
@@ -35,32 +35,34 @@ PORT(
 	D64_128	: in std_logic;
 	DSDON		: in std_logic;
 	F			: in std_logic_vector(3 downto 0);	
+	BCK16		: in std_logic;
 	ready		: out  std_logic;                     	-- back end system ready signal
 	data_out	: out std_logic_vector(7 DOWNTO 0);  	--data to i2c_slave module
 	INSELO	: out std_logic_Vector(1 downto 0);
 	RSV2		: out std_logic;
-	RSV1		: out std_logic
+	RSV1		: out std_logic;
+	MCLKEN	: out std_logic
 );
 END reg_ctrl;
 
 ARCHITECTURE RTL OF reg_ctrl IS
 
-	signal dstart		: std_logic;
+--	signal dstart		: std_logic;
 	signal dstop		: std_logic;
 	signal ddata_vld	: std_logic;
 	signal dr_w			: std_logic;
 	signal rd			: std_logic;
 	signal addr_reg	: std_logic_vector(1 downto 0);
-	signal dreg			: std_logic_vector(3 downto 0);
-	signal ddreg		: std_logic_vector(3 downto 0);
-	signal dddreg		: std_logic_vector(3 downto 0);
+	signal dreg			: std_logic_vector(2 downto 0);	--(3 downto 0);
+	signal ddreg		: std_logic_vector(2 downto 0);	--(3 downto 0);
+	signal dddreg		: std_logic_vector(2 downto 0);	--(3 downto 0);
 	signal rd_reg0		: std_logic_vector(7 downto 0);
 	signal rd_reg1		: std_logic_vector(7 downto 0);
 	signal rd_reg2		: std_logic_vector(7 downto 0);
 	signal rd_reg3		: std_logic_vector(7 downto 0);
-	signal wr_reg0		: std_logic_vector(7 downto 0);
+	signal wr_reg0		: std_logic_vector(7 downto 0);	-- := "00001000";	-- Caution!! Change BD34301.ino
 	signal wr_reg3		: std_logic_vector(7 downto 0);
-	signal dummy_reg	: std_logic_vector(7 downto 0);
+--	signal dummy_reg	: std_logic_vector(7 downto 0);
 
 	type states IS (idle,address,data);
 	signal present_state: states;
@@ -74,9 +76,9 @@ begin
 	----------------------
 	process(sysclk,reset) begin
 		if reset = '1' then
-			dreg <= "0000";
+			dreg <= "000";	--"0000";
 		elsif(sysclk'event and sysclk = '1') then
-			dreg(3) <= start;
+--			dreg(3) <= start;
 			dreg(2) <= stop;
 			dreg(1) <= r_w;
 			dreg(0) <= data_vld;
@@ -85,7 +87,7 @@ begin
 	
 	process(sysclk,reset) begin
 		if reset = '1' then
-			ddreg <= "0000";
+			ddreg <= "000";	--"0000";
 		elsif (sysclk'event and sysclk = '1') then
 			ddreg <= dreg;
 		end if;
@@ -93,7 +95,7 @@ begin
 	
 	process(sysclk,reset) begin
 		if reset = '1' then
-			dddreg <= "0000";
+			dddreg <= "000";	--"0000";
 		elsif (sysclk'event and sysclk = '1') then
 			dddreg <= ddreg;
 		end if;
@@ -104,7 +106,7 @@ begin
 	----------------------
 	-- Detect rising egde
 	----------------------
-	dstart <= ddreg(3) and not dddreg(3);
+--	dstart <= ddreg(3) and not dddreg(3);
 	dstop <= ddreg(2) and not dddreg(2);
 	rd <= ddreg(1) and not dddreg(1);
 	ddata_vld <= ddreg(0) and not dddreg(0);
@@ -178,7 +180,7 @@ begin
 						wr_reg0 <= data_in;
 					when "11" =>
 						wr_reg3 <= data_in;
-					when others => dummy_reg <= data_in;
+					when others => null; --dummy_reg <= data_in;
 				end case;
 			end if;
 		end if;
@@ -188,13 +190,14 @@ begin
 	inselo(0) <= wr_reg0(3);
 	rsv2 <= wr_reg3(7);
 	rsv1 <= wr_reg3(6);
+	mclken <= wr_reg3(0);
 	
 	-- Configuration Register
 	rd_reg0(7) <= OPT1;
 	rd_reg0(6) <= OPT0;
 	rd_reg0(5) <= PLUGED;
-	rd_reg0(4) <= insel(1);
-	rd_reg0(3) <= insel(0);
+	rd_reg0(4) <= '0';
+	rd_reg0(3) <= '0';
 	rd_reg0(2) <= devname(2);
 	rd_reg0(1) <= devname(1);
 	rd_reg0(0) <= devname(0);
@@ -204,20 +207,20 @@ begin
 	rd_reg1(5) <= dif2;
 	rd_reg1(4) <= dif1;
 	rd_reg1(3) <= dif0;
-	rd_reg1(2) <= dsdpath;
-	rd_reg1(1) <= gc1;
-	rd_reg1(0) <= gc0;	
+	rd_reg1(2) <= dsdpath;	-- PHC
+	rd_reg1(1) <= gc1;	-- INPOL1
+	rd_reg1(0) <= gc0;	-- INPOL2
 	
 	rd_reg2(7) <= CHLR;
-	rd_reg2(6) <= '0';
-	rd_reg2(5) <= '0';
+	rd_reg2(6) <= insel(1);	-- '0'
+	rd_reg2(5) <= insel(0);	-- PAC;
 	rd_reg2(4) <= dem;
-	rd_reg2(3) <= dsdsel1;
-	rd_reg2(2) <= dsdsel0;
-	rd_reg2(1) <= dsdd;
-	rd_reg2(0) <= dsdf;	
+	rd_reg2(3) <= dsdsel1;	-- OSR1
+	rd_reg2(2) <= dsdsel0;	-- OSR0
+	rd_reg2(1) <= dsdd;	-- DSDF1
+	rd_reg2(0) <= dsdf;	-- DSDF0
 
-	rd_reg3(7) <= '0';
+	rd_reg3(7) <= BCK16;
 	rd_reg3(6) <= d256_512;	-- DSD256/512
 	rd_reg3(5) <= F(3);
 	rd_reg3(4) <= F(2);
@@ -235,7 +238,7 @@ begin
 						when "01" => data_out <= rd_reg1;
 						when "10" => data_out <= rd_reg2;
 						when "11" => data_out <= rd_reg3;
-						when others => data_out <= "XXXXXXXX";
+						when others => null; --data_out <= "XXXXXXXX";
 					end case;
 				end if;		
 			end if;					
