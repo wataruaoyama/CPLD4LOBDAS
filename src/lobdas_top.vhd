@@ -268,6 +268,8 @@ signal ibclk2				: std_logic;
 signal imclk2				: std_logic;
 signal mclken				: std_logic;
 signal bck16				: std_logic;
+signal DIV_BBB_MCLK		: std_logic;
+signal ex_mclk				: std_logic;
 
 begin
 
@@ -292,7 +294,7 @@ R1 : reg_ctrl port map(reset=>rst, sysclk=>clk49m, start=>start, stop=>stop, r_w
 							  DSDON=>idp, F=>ifs, BCK16=>bck16, ready=>ready,data_out=>data_out, INSELO=>inselo,
 							  RSV2=>rsv2, RSV1=>rsv1, MCLKEN=>mclken);
 
-SEL : select_in port map(xrst=>xrst, INSELO=>inselo, BBB_MCLK=>bbb_mclk, BBB_BCLK=>bbb_bclk, 
+SEL : select_in port map(xrst=>xrst, INSELO=>inselo, BBB_MCLK=>ex_mclk, BBB_BCLK=>bbb_bclk, 
 								 BBB_LRCK=>bbb_lrck, BBB_DATA=>bbb_data, RJ4_DATA=>rj4_data, 
 								 RJ4_BCLK=>rj4_bclk, RJ4_LRCK=>rj4_lrck, RJ4_MCLK=>rj4_mclk, 
 								 USB_DATA=>usb_data, USB_MCLK=>usb_mclk, USB_BCLK=>usb_bclk, 
@@ -339,5 +341,15 @@ process(DEVNAME, idp, ibclk1, ibclk2, imclk1, imclk2, mclken) begin
 		MCLK2 <= imclk2;
 	end if;
 end process;
+
+process(BBB_MCLK, xrst) begin
+	if (xrst = '0') then
+		DIV_BBB_MCLK <= '0';
+	elsif (BBB_MCLK'event and BBB_MCLK='1') then
+		DIV_BBB_MCLK <= not DIV_BBB_MCLK;
+	end if;
+end process;
+
+ex_mclk <= BBB_MCLK when insel(0) = '1' else DIV_BBB_MCLK;
 
 end RTL;

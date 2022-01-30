@@ -72,7 +72,7 @@ process(CPOK,XDSD,fcount,CK_SEL) begin
 				when "000111111" => q <= "0101";	--176.4kHz
 				when "000011111" => q <= "0111";	--352.8kHz
 				When "000100000" => q <= "0111";	--352.8kHz
-				when others => q <= null;	--"XXXX";
+				when others => q <= "XXXX";--null;	--"XXXX";
 			end case;
 		else
 			case fcount is
@@ -85,7 +85,7 @@ process(CPOK,XDSD,fcount,CK_SEL) begin
 				when "001000000" => q <= "0110";	--192kHz
 				when "000011111" => q <= "1000";	--384kHz
 				when "000100000" => q <= "1000";
-				When others => q <= null;	--"XXXX";
+				When others => q <= "XXXX";--null;	--"XXXX";
 			end case;
 		end if;
 	end if;

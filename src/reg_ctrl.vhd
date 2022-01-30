@@ -212,8 +212,8 @@ begin
 	rd_reg1(0) <= gc0;	-- INPOL2
 	
 	rd_reg2(7) <= CHLR;
-	rd_reg2(6) <= insel(1);	-- '0'
-	rd_reg2(5) <= insel(0);	-- PAC;
+	rd_reg2(6) <= insel(1);	-- PAC
+	rd_reg2(5) <= insel(0);	-- DIVMCLK
 	rd_reg2(4) <= dem;
 	rd_reg2(3) <= dsdsel1;	-- OSR1
 	rd_reg2(2) <= dsdsel0;	-- OSR0
