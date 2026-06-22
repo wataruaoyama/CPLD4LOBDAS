@@ -30,11 +30,11 @@ signal dcount : std_logic_vector(3 downto 0);
 signal dbck : std_logic_vector(2 downto 0);
 signal ebck : std_logic;
 
---bck_count
-signal bck_count : std_logic_vector(4 downto 0);
-signal shift : std_logic_vector(2 downto 0);
-signal ibck16 : std_logic;
-signal latch_en : std_logic;
+signal d512_pending : std_logic;--bck_count
+--signal bck_count : std_logic_vector(4 downto 0);
+--signal shift : std_logic_vector(2 downto 0);
+--signal ibck16 : std_logic;
+--signal latch_en : std_logic;
 
 BEGIN
 
@@ -131,92 +131,107 @@ end process;
 
 ebck <= dbck(2) and not dbck(1);
 
-process(CPOK,CLK49M,XDSD) begin
-	if CPOK = '0' or XDSD = '1' then
-		dcount <= "0000";
-	elsif CLK49M'event and CLK49M='1' then
-		if dbck(2) = '0' then
-			dcount <= "0000";
-		else
-			dcount <= dcount + '1';
-		end if;
-	end if;
-end process;
+process(CLK49M)
+begin
+    if CLK49M'event and CLK49M = '1' then
 
-process(CPOK,CLK49M,dcount) begin
-	if CPOK = '0' then
-		d256_512 <= '0';
-		d64_128 <= '0';
-	elsif CLK49M'event and CLK49M='1' then
-		if ebck = '1' then
-			if dcount = "0000" then			-- DSD512
-				d256_512 <= '1';
-				d64_128 <= '1';
-			elsif dcount = "0010" then		-- DSD256
---			if dcount = "0010" then		-- DSD256
-				d256_512 <= '1';
-				d64_128 <= '0';
-			elsif dcount = "0100" then		-- DSD128
-				d256_512 <= '0';
-				d64_128 <= '1';
-			elsif dcount = "1000" then		-- DSD64
-				d256_512 <= '0';
-				d64_128 <= '0';
-			end if;
-		else
-			d256_512 <= d256_512;
-			d64_128 <= d64_128;
-		end if;
-	end if;
+        -- CPOK='1' かつ DSD時だけ dcount を更新する。
+        -- CPOK='0' または XDSD='1' のときは何も代入しないので、
+        -- dcount は直前値を保持する。
+        if CPOK = '1' and XDSD = '0' then
+            if dbck(2) = '0' then
+                dcount <= "0000";
+            else
+                dcount <= dcount + '1';
+            end if;
+        end if;
+
+    end if;
 end process;
+--process(CPOK,CLK49M,XDSD) begin
+--	if CPOK = '0' or XDSD = '1' then
+--		dcount <= "0000";
+--	elsif CLK49M'event and CLK49M='1' then
+--		if dbck(2) = '0' then
+--			dcount <= "0000";
+--		else
+--			dcount <= dcount + '1';
+--		end if;
+--	end if;
+--end process;
+
+process(CPOK, CLK49M)
+begin
+    if CPOK = '0' then
+        d256_512    <= '0';
+        d64_128     <= '0';
+        d512_pending <= '0';
+
+    elsif CLK49M'event and CLK49M = '1' then
+
+        if XDSD = '0' then
+            if ebck = '1' then
+
+                if dcount = "0000" then
+                    if d512_pending = '1' then
+                        d256_512 <= '1';
+                        d64_128  <= '1';
+                    end if;
+                    d512_pending <= '1';
+
+                elsif dcount = "0010" then
+                    d256_512    <= '1';
+                    d64_128     <= '0';
+                    d512_pending <= '0';
+
+                elsif dcount = "0100" then
+                    d256_512    <= '0';
+                    d64_128     <= '1';
+                    d512_pending <= '0';
+
+                elsif dcount = "1000" then
+                    d256_512    <= '0';
+                    d64_128     <= '0';
+                    d512_pending <= '0';
+
+                else
+                    d512_pending <= '0';
+                end if;
+
+            end if;
+        end if;
+    end if;
+end process;
+--process(CPOK,CLK49M,dcount) begin
+--	if CPOK = '0' then
+--		d256_512 <= '0';
+--		d64_128 <= '0';
+--	elsif CLK49M'event and CLK49M='1' then
+--		if ebck = '1' then
+--			if dcount = "0000" then			-- DSD512
+--				d256_512 <= '1';
+--				d64_128 <= '1';
+--			elsif dcount = "0010" then		-- DSD256
+----			if dcount = "0010" then		-- DSD256
+--				d256_512 <= '1';
+--				d64_128 <= '0';
+--			elsif dcount = "0100" then		-- DSD128
+--				d256_512 <= '0';
+--				d64_128 <= '1';
+--			elsif dcount = "1000" then		-- DSD64
+--				d256_512 <= '0';
+--				d64_128 <= '0';
+--			end if;
+--		else
+--			d256_512 <= d256_512;
+--			d64_128 <= d64_128;
+--		end if;
+--	end if;
+--end process;
 
 DSD64_128 <= d64_128;
 DSD256_512 <= d256_512;
 
---bck_count
---	process(CPOK, BCK) begin
---		if (CPOK = '0') then
---			bck_count <= "00000";
---		elsif (BCK'event and BCK='1') then
---			if (XDSD = '0') then
---				if (LRCK = '1') then
---					bck_count <= bck_count + 1;
---				else
---					bck_count <= "00000";
---				end if;
---			else
---				bck_count <= "00000";
---			end if;
---		end if;
---	end process;
---	
---	process(CPOK, CLK49M) begin
---		if (CPOK = '0') then
---			shift <= "000";
---		elsif (CLK49M'event and CLK49M='1') then
---			shift(0) <= lrck;
---			shift(1) <= shift(0);
---			shift(2) <= shift(1);
---		end if;
---	end process;
---	
---	latch_en <= not shift(1) and shift(2);
---	
---	process(CPOK, CLK49M) begin
---		if (CPOK = '0') then
---			ibck16 <= '0';
---		elsif (CLK49M'event and CLK49M='1') then
---			if (latch_en = '1') then
---				if (bck_count = "10000") then
---					ibck16 <= '1';
---				else
---					ibck16 <= '0';
---				end if;
---			end if;
---		end if;
---	end process;
---	
---	bck16 <= ibck16;
 end RTL;
 			
 				

@@ -22,8 +22,10 @@ signal sreg		: std_logic_vector(15 downto 0);
 
 BEGIN
 
-process(bclk) begin
-	if(bclk'event and bclk = '1') then
+process(bclk, xrst) begin
+	if xrst = '0' then
+		sreg <= (others => '0');
+	elsif(bclk'event and bclk = '1') then
 		sreg <= sreg(14 downto 0) & lrck;
 	end if;
 end process;
@@ -50,8 +52,8 @@ process (bclk,xrst) begin
 			cnt <= cnt + 1;
 		elsif cnt = "011" then
 			cnt <= "000";
-		else
-			cnt <= cnt;
+--		else
+--			cnt <= cnt;
 		end if;
 	end if;
 end process;
@@ -62,12 +64,12 @@ process(bclk,xrst) begin
 		dp_int <= '0';
 	elsif bclk'event and bclk = '1' then
 		if dp_int = '0' then
-			if sreg = "0110100101101001" then
+			if sreg = X"6969" then --0110100101101001" then
 				dp_int <= '1';
-			elsif sreg = "0101010101010101" then
-				dp_int <= '1';
-			elsif sreg = "0011001100110011" then
-				dp_int <= '1';
+--			elsif sreg = "0101010101010101" then
+--				dp_int <= '1';
+--			elsif sreg = "0011001100110011" then
+--				dp_int <= '1';
 			else
 				dp_int <= dp_int;
 			end if;
@@ -75,8 +77,8 @@ process(bclk,xrst) begin
 --			if count = "11111" then
 			if cnt = "011" then
 				dp_int <= '0';
-			else
-				dp_int <= dp_int;
+--			else
+--				dp_int <= dp_int;
 			end if;
 		end if;
 	end if;

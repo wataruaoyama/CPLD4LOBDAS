@@ -270,6 +270,7 @@ signal mclken				: std_logic;
 signal bck16				: std_logic;
 signal DIV_BBB_MCLK		: std_logic;
 signal ex_mclk				: std_logic;
+signal rsv2i				: std_logic;
 
 begin
 
@@ -292,7 +293,7 @@ R1 : reg_ctrl port map(reset=>rst, sysclk=>clk49m, start=>start, stop=>stop, r_w
 							  DSDPATH=>dsdpath, GC1=>gc1, GC0=>gc0, DEVNAME=>devname, CHLR=>chlr, 
 							  INSEL=>insel, OPT0=>opt0, OPT1=>opt1, PLUGED=>pluged, D256_512=>id256_512, D64_128=>id64_128,
 							  DSDON=>idp, F=>ifs, BCK16=>bck16, ready=>ready,data_out=>data_out, INSELO=>inselo,
-							  RSV2=>rsv2, RSV1=>rsv1, MCLKEN=>mclken);
+							  RSV2=>rsv2i, RSV1=>rsv1, MCLKEN=>mclken);
 
 SEL : select_in port map(xrst=>xrst, INSELO=>inselo, BBB_MCLK=>ex_mclk, BBB_BCLK=>bbb_bclk, 
 								 BBB_LRCK=>bbb_lrck, BBB_DATA=>bbb_data, RJ4_DATA=>rj4_data, 
@@ -351,5 +352,6 @@ process(BBB_MCLK, xrst) begin
 end process;
 
 ex_mclk <= BBB_MCLK when insel(0) = '1' else DIV_BBB_MCLK;
+rsv2 <= '1' or rsv2i;
 
 end RTL;
