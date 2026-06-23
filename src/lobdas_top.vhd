@@ -148,9 +148,9 @@ PORT(
 		CPOK			: IN std_logic;
 --		ov96k			: out std_logic;
 		DSD64_128	: OUT std_logic;
-		DSD256_512	: OUT std_logic;
-		FS				: OUT std_logic_vector(3 downto 0);
-		BCK16			: OUT std_logic);
+		DSD256_512	: OUT std_logic);
+--		FS				: OUT std_logic_vector(3 downto 0);
+--		BCK16			: OUT std_logic);
 END component;
 
 component detdsd
@@ -221,7 +221,11 @@ PORT(
 		CLK49M		: in std_logic;
 		XDSD			: in std_logic;
 		LRCK			: in std_logic;
-		CK_SEL		: out std_logic
+		BCK			: in std_logic;
+		CK_SEL		: out std_logic;
+		FS				: out std_logic_vector(3 downto 0);
+		DSD64_128	: out std_logic;
+		DSD256_512	: out std_logic
 );
 END component;
 
@@ -271,6 +275,7 @@ signal bck16				: std_logic;
 signal DIV_BBB_MCLK		: std_logic;
 signal ex_mclk				: std_logic;
 signal rsv2i				: std_logic;
+signal mclkeni			: std_logic;
 
 begin
 
@@ -293,7 +298,7 @@ R1 : reg_ctrl port map(reset=>rst, sysclk=>clk49m, start=>start, stop=>stop, r_w
 							  DSDPATH=>dsdpath, GC1=>gc1, GC0=>gc0, DEVNAME=>devname, CHLR=>chlr, 
 							  INSEL=>insel, OPT0=>opt0, OPT1=>opt1, PLUGED=>pluged, D256_512=>id256_512, D64_128=>id64_128,
 							  DSDON=>idp, F=>ifs, BCK16=>bck16, ready=>ready,data_out=>data_out, INSELO=>inselo,
-							  RSV2=>rsv2i, RSV1=>rsv1, MCLKEN=>mclken);
+							  RSV2=>rsv2i, RSV1=>rsv1, MCLKEN=>mclkeni);
 
 SEL : select_in port map(xrst=>xrst, INSELO=>inselo, BBB_MCLK=>ex_mclk, BBB_BCLK=>bbb_bclk, 
 								 BBB_LRCK=>bbb_lrck, BBB_DATA=>bbb_data, RJ4_DATA=>rj4_data, 
@@ -304,12 +309,12 @@ SEL : select_in port map(xrst=>xrst, INSELO=>inselo, BBB_MCLK=>ex_mclk, BBB_BCLK
 								 DATA1=>data1, BCLK1=>ibclk1, MCLK1=>imclk1, LRCK2=>lrck2, DATA2=>data2,
 								 BCLK2=>ibclk2, MCLK2=>imclk2, FS=>ifs, DP=>idp, D256_512=>id256_512, D64_128=>id64_128); 
 
-DET1 : detect_fs port map(CLK49M=>clk49m, XDSD=>xdsd, MCLK=>imclk1, BCK=>ibclk1, LRCK=>ilrck1, CK_SEL=>ck_sel, 
-								  CPOK=>xrst, DSD64_128=>det_d64, DSD256_512=>det_d256, FS=>det_fs, BCK16=>bck16);
+--DET1 : detect_fs port map(CLK49M=>clk49m, XDSD=>xdsd, MCLK=>imclk1, BCK=>ibclk1, LRCK=>ilrck1, CK_SEL=>ck_sel, 
+--								  CPOK=>xrst, DSD64_128=>det_d64, DSD256_512=>det_d256);--, FS=>det_fs, BCK16=>bck16);
 								  
 DET2 : detdsd port map(xrst=>xrst, mclk=>imclk1, bclk=>ibclk1, lrck=>ilrck1, dp=>det_dp);
 
-FS1 : fs44_48 port map(XRST=>xrst, CLK49M=>clk49m, XDSD=>xdsd, LRCK=>ilrck1, CK_SEL=>ck_sel);
+FS1 : fs44_48 port map(XRST=>xrst, CLK49M=>clk49m, XDSD=>xdsd, LRCK=>ilrck1, BCK=>ibclk1, CK_SEL=>ck_sel, FS=>det_fs, DSD64_128=>det_d64, DSD256_512=>det_d256);
 
 ESP : espReset PORT map(XRST =>xrst, CLK49M=>clk49m, ESPRST=>esprst);
 
@@ -322,6 +327,8 @@ xdsd <= not idp;
 
 --TP1 <= inselo(0);
 --TP2 <= inselo(1);
+
+mclken <= mclkeni or '1';
 
 process(DEVNAME, idp, ibclk1, ibclk2, imclk1, imclk2, mclken) begin
 	if (DEVNAME(2 downto 0) = "011") then	-- BD34301EKV
