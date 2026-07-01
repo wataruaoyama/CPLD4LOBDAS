@@ -99,16 +99,16 @@ process(BBB_MCLK,BBB_BCLK,BBB_LRCK,BBB_DATA,RJ4_MCLK,RJ4_BCLK,RJ4_LRCK,RJ4_DATA,
 		LRCK2 <= BBB_LRCK;
 		DATA1 <= BBB_DATA;
 		DATA2 <= BBB_DATA;		
-	elsif inselo = "11" then
-		DP <= USB_DP;
-		MCLK1 <= USB_MCLK;
-		MCLK2 <= USB_MCLK;
-		BCLK1 <= USB_BCLK;
-		BCLK2 <= USB_BCLK;
-		LRCK1 <= USB_LRCK;
-		LRCK2 <= USB_LRCK;
-		DATA1 <= USB_DATA;
-		DATA2 <= USB_DATA;
+--	elsif inselo = "11" then
+--		DP <= USB_DP;
+--		MCLK1 <= USB_MCLK;
+--		MCLK2 <= USB_MCLK;
+--		BCLK1 <= USB_BCLK;
+--		BCLK2 <= USB_BCLK;
+--		LRCK1 <= USB_LRCK;
+--		LRCK2 <= USB_LRCK;
+--		DATA1 <= USB_DATA;
+--		DATA2 <= USB_DATA;
 	else
 		DP <= USB_DP;
 		MCLK1 <= USB_MCLK;
