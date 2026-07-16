@@ -62,7 +62,6 @@ ARCHITECTURE RTL OF reg_ctrl IS
 	signal rd_reg3		: std_logic_vector(7 downto 0);
 	signal wr_reg0		: std_logic_vector(7 downto 0);	-- := "00001000";	-- Caution!! Change BD34301.ino
 	signal wr_reg3		: std_logic_vector(7 downto 0);
---	signal dummy_reg	: std_logic_vector(7 downto 0);
 
 	type states IS (idle,address,data);
 	signal present_state: states;

@@ -58,8 +58,8 @@ PORT(
 	MCLK2		: out std_logic;
 	RSV2		: out std_logic;
 	RSV1		: out std_logic;
-	TP1		: out std_logic;
-	TP2		: out std_logic;
+	TP1		: in std_logic;
+	TP2		: in std_logic;
 	ESPRST	: out std_logic
 );
 END lobdas_top;
@@ -272,6 +272,7 @@ signal DIV_BBB_MCLK		: std_logic;
 signal ex_mclk				: std_logic;
 signal rsv2i				: std_logic;
 signal mclkeni				: std_logic;
+signal selectSource		: std_logic_vector(1 downto 0);
 
 begin
 
@@ -346,7 +347,7 @@ R1 : reg_ctrl port map(
 
 SEL : select_in port map(
 	xrst => xrst, 
-	INSELO => inselo, 
+	INSELO => selectSource, --inselo, 
 	BBB_MCLK => ex_mclk, 
 	BBB_BCLK => bbb_bclk, 
 	BBB_LRCK => bbb_lrck, 
@@ -426,6 +427,7 @@ xdsd <= not idp;
 
 --TP1 <= inselo(0);
 --TP2 <= inselo(1);
+selectSource <= TP2 & TP1;
 
 mclken <= mclkeni or '1';
 
