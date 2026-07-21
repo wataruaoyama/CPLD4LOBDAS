@@ -1,371 +1,374 @@
---   ==================================================================
---   >>>>>>>>>>>>>>>>>>>>>>> COPYRIGHT NOTICE <<<<<<<<<<<<<<<<<<<<<<<<<
---   ------------------------------------------------------------------
---   Copyright (c) 2013 by Lattice Semiconductor Corporation
---   ALL RIGHTS RESERVED 
---   ------------------------------------------------------------------
---
---   Permission:
---
---      Lattice SG Pte. Ltd. grants permission to use this code
---      pursuant to the terms of the Lattice Reference Design License Agreement. 
---
---
---   Disclaimer:
---
---      This VHDL or Verilog source code is intended as a design reference
---      which illustrates how these types of functions can be implemented.
---      It is the user's responsibility to verify their design for
---      consistency and functionality through the use of formal
---      verification methods.  Lattice provides no warranty
---      regarding the use or functionality of this code.
---
---   --------------------------------------------------------------------
---
---                  Lattice SG Pte. Ltd.
---                  101 Thomson Road, United Square #07-02 
---                  Singapore 307591
---
---
---                  TEL: 1-800-Lattice (USA and Canada)
---                       +65-6631-2000 (Singapore)
---                       +1-503-268-8001 (other locations)
---
---                  web: http:--www.latticesemi.com/
---                  email: techsupport@latticesemi.com
---
---   --------------------------------------------------------------------
---
---
---  Name:  i2c_slave.vhd
---
---  Description: Generic i2c slave module with 1 bidirectional data port
---    1.supports random write, random read, sequential read
---    and burst write / read
---
----------------------------------------------------------------------------
--- Code Revision History :
----------------------------------------------------------------------------
--- Ver: | Author |Mod. Date |Changes Made:
--- V1.1 | YF    |12/2009    |Init ver
--- V1.2 | cm    |7/2010     |update the file based on verilog ver 1.3
----------------------------------------------------------------------------
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.std_logic_arith.all;
+Library IEEE;
+USE IEEE.std_logic_1164.ALL;
+USE IEEE.std_logic_unsigned.ALL;
 USE WORK.ALL;
-use ieee.std_logic_unsigned.all;
 
-entity i2c_slave IS
- port (
--- generic ports
- XRESET  : in  std_logic;                     -- System Reset
- sysclk	: in 	std_logic;
- ready   : in  std_logic;                     -- back end system ready signal
- start   : out std_logic;                     -- start of the i2c cycle
- stop    : out std_logic;                     -- stop the i2c cycle
- data_in : in  std_logic_vector(7 DOWNTO 0);  -- parallel data in
- data_out: out std_logic_vector(7 DOWNTO 0);  -- parallel data out
- r_w     : out std_logic;                     -- read/write signal to the reg_map bloc
- data_vld: out std_logic;                     -- data valid from i2c
--- i2c ports
- scl_in  : in std_logic;                      -- SCL clock line
- scl_oe  : out std_logic;                     -- controls scl output enable
- sda_in  : in std_logic;                      -- i2c serial data line in
- sda_oe  : out std_logic                      -- controls sda output enable
- );
-end entity;
-architecture arch of i2c_slave is
---*****************************************
--- Define states of the state machine
---*****************************************
-constant I2C_SLAVE_ADDR : std_logic_vector(6 DOWNTO 0) := "1010010";
-constant idle   : std_logic_vector(4 DOWNTO 0) := "00000";
-constant addr7  : std_logic_vector(4 DOWNTO 0) := "00001";
-constant addr6  : std_logic_vector(4 DOWNTO 0) := "00010";
-constant addr5  : std_logic_vector(4 DOWNTO 0) := "00011";
-constant addr4  : std_logic_vector(4 DOWNTO 0) := "00100";
-constant addr3  : std_logic_vector(4 DOWNTO 0) := "00101";
-constant addr2  : std_logic_vector(4 DOWNTO 0) := "00110";
-constant addr1  : std_logic_vector(4 DOWNTO 0) := "00111";
-constant det_rw : std_logic_vector(4 DOWNTO 0) := "01000";
-constant ack    : std_logic_vector(4 DOWNTO 0) := "01001";
-constant data7  : std_logic_vector(4 DOWNTO 0) := "01010";
-constant data6  : std_logic_vector(4 DOWNTO 0) := "01011";
-constant data5  : std_logic_vector(4 DOWNTO 0) := "01100";
-constant data4  : std_logic_vector(4 DOWNTO 0) := "01101";
-constant data3  : std_logic_vector(4 DOWNTO 0) := "01110";
-constant data2  : std_logic_vector(4 DOWNTO 0) := "01111";
-constant data1  : std_logic_vector(4 DOWNTO 0) := "10000";
-constant data0  : std_logic_vector(4 DOWNTO 0) := "10001";
+ENTITY i2c_slave IS
+PORT (
+    -- generic ports
+    XRESET   : in  std_logic;                    -- System Reset, active high
+    sysclk   : in  std_logic;
+    ready    : in  std_logic;                    -- back end ready
 
-signal data_int : std_logic_vector(7 DOWNTO 0);     -- internal data register
-signal start_t, stop_t : std_logic;             -- start and stop detection of I2C cycles
-signal sm_state : std_logic_vector(4 DOWNTO 0);     -- state machine
-signal shift : std_logic_vector(7 DOWNTO 0);      -- shift register attached to I2C controller
-signal r_w_t : std_logic;            -- indicate read/write operation
-signal ack_out : std_logic;        -- acknowledge output from slave to master
-signal sda_en : std_logic;         -- OE control of sda signal, could use open drain feature
-signal vld_plse  : std_logic;          -- data valid pulse
-signal start_rst :  std_logic;       -- reset signals for START and STOP bits
-signal start_async_rst :  std_logic;
-signal stop_async_rst :  std_logic;
+    start    : out std_logic;                    -- 1 sysclk pulse
+    stop     : out std_logic;                    -- 1 sysclk pulse
 
-signal sda_f,sda_clk		: std_logic;
+    data_in  : in  std_logic_vector(7 DOWNTO 0); -- read data from reg_ctrl
+    data_out : out std_logic_vector(7 DOWNTO 0); -- write data to reg_ctrl
 
-signal shift_sda : std_logic_vector(2 downto 0);
+    r_w      : out std_logic;                    -- 0: write, 1: read
+    data_vld : out std_logic;                    -- write byte valid, 1 sysclk pulse
 
-begin
+    -- i2c ports
+    scl_in   : in  std_logic;
+    scl_oe   : out std_logic;
+    sda_in   : in  std_logic;
+    sda_oe   : out std_logic
+);
+END i2c_slave;
 
---*****************************************
--- Generate reset signals for start and stop
---*****************************************
-start_rst <= '1' when ((sm_state = addr7)) else '0'; -- used to reset the start register after we move to addr7
-start_async_rst <= start_rst or XRESET;           -- oring the reset signal external and internal
-stop_async_rst <= start_t or XRESET;           -- same for stop reset
+ARCHITECTURE RTL OF i2c_slave IS
 
---******************************************
--- register to delay SDA
--- prevents false start/re-starts from syncronized 
--- falling edges (sda and scl)
---******************************************
---sda_clk <= sda_f xor sda_in after 1 ns;
+    constant I2C_SLAVE_ADDR : std_logic_vector(6 downto 0) := "1010010"; -- 0x52
 
-process(start_async_rst,sysclk) begin
-	if (start_async_rst = '1') then
-		shift_sda <= "111";
-	elsif (rising_edge(sysclk)) then
-		shift_sda <= shift_sda(1 downto 0) & sda_in;
-	end if;
-end process;
-sda_clk <= shift_sda(1) xor shift_sda(2);
+    type i2c_state_type is (
+        ST_IDLE,
+        ST_ADDR,
+        ST_ADDR_ACK,
+        ST_WRITE,
+        ST_WRITE_ACK,
+        ST_READ,
+        ST_READ_ACK
+    );
 
-process(sda_clk, start_async_rst)
-begin
-	if (start_async_rst = '1') then
-	        sda_f <= sda_in;
-	elsif (rising_edge(sda_clk)) then
-		sda_f <= sda_in;
-	end if;
-end process;	
+    signal state       : i2c_state_type;
 
---*****************************************
--- Detect I2C Cycle Start
---*****************************************
---process(sda_in,start_async_rst)
-process(sda_f,start_async_rst)
-begin
-  if (start_async_rst = '1') then
-    start_t <= '0';
-  elsif (falling_edge(sda_f)) then
-    start_t <= scl_in;
-  end if;
-end process;
+    signal scl_sr      : std_logic_vector(2 downto 0);
+    signal sda_sr      : std_logic_vector(2 downto 0);
+    signal scl_filt    : std_logic;
+    signal sda_filt    : std_logic;
+    signal scl_prev    : std_logic;
+    signal sda_prev    : std_logic;
 
---*****************************************
---Detect I2C Cycle Stop
---*****************************************
-process(sda_in,stop_async_rst)
-begin
-  if stop_async_rst = '1' then
-     stop_t <= '0';
-  elsif rising_edge(sda_in) then
-     stop_t <= scl_in;
-  end if;
-end process;
+    signal scl_rise    : std_logic;
+    signal scl_fall    : std_logic;
+    signal start_det   : std_logic;
+    signal stop_det    : std_logic;
 
---*****************************************
---FSM check the addr byte and track rw opp
---*****************************************
-process(scl_in,XRESET)
-begin
-  if (XRESET = '1') then
-    sm_state <=  idle;                                     -- reset fsm to idle
-    r_w_t      <=  '1';           -- initial value for read
-    vld_plse <=  '0';
-  elsif rising_edge(scl_in) then
-    case sm_state is
-      when idle =>
-        vld_plse <=  '0';
-        if (start_t = '1') then     -- start the I2C addr cycle
-          sm_state <= addr7;
-        elsif (stop_t = '1') then       -- stop and go to idle
-          sm_state <=  idle;
-        else
-          sm_state <=  idle;
+    signal bit_cnt     : integer range 0 to 7;
+    signal rx_shift    : std_logic_vector(7 downto 0);
+    signal tx_shift    : std_logic_vector(7 downto 0);
+
+    signal rw_reg      : std_logic;
+
+    signal sda_oe_reg  : std_logic;
+    signal scl_oe_reg  : std_logic;
+
+    signal start_reg   : std_logic;
+    signal stop_reg    : std_logic;
+    signal data_vld_reg: std_logic;
+    signal data_out_reg: std_logic_vector(7 downto 0);
+
+    signal ack_value   : std_logic;  -- '1' means ACK drive low
+    signal ack_phase   : std_logic;  -- 0: wait first fall, 1: wait second fall
+
+    signal read_ack_sampled : std_logic;
+    signal read_more        : std_logic;
+
+BEGIN
+
+    --------------------------------------------------------------------
+    -- Output assign
+    --------------------------------------------------------------------
+    start    <= start_reg;
+    stop     <= stop_reg;
+    data_vld <= data_vld_reg;
+    data_out <= data_out_reg;
+    r_w      <= rw_reg;
+
+    sda_oe   <= sda_oe_reg;
+    scl_oe   <= scl_oe_reg;
+
+    --------------------------------------------------------------------
+    -- Simple input synchronizer / glitch filter
+    --------------------------------------------------------------------
+    process(sysclk, XRESET)
+    begin
+        if XRESET = '1' then
+            scl_sr   <= "111";
+            sda_sr   <= "111";
+            scl_filt <= '1';
+            sda_filt <= '1';
+            scl_prev <= '1';
+            sda_prev <= '1';
+
+        elsif rising_edge(sysclk) then
+            scl_sr <= scl_sr(1 downto 0) & scl_in;
+            sda_sr <= sda_sr(1 downto 0) & sda_in;
+
+            scl_prev <= scl_filt;
+            sda_prev <= sda_filt;
+
+            if scl_sr = "111" then
+                scl_filt <= '1';
+            elsif scl_sr = "000" then
+                scl_filt <= '0';
+            end if;
+
+            if sda_sr = "111" then
+                sda_filt <= '1';
+            elsif sda_sr = "000" then
+                sda_filt <= '0';
+            end if;
         end if;
-      when addr7 => 
-        if (shift(0) = I2C_SLAVE_ADDR(6)) then        -- checking the slave addr
-          sm_state <=  addr6;
-        else
-          sm_state <=  idle;
-        end if;
-      when addr6 =>
-        if (shift(0) = I2C_SLAVE_ADDR(5)) then
-          sm_state <=  addr5;
-        else
-          sm_state <=  idle;
-        end if;
-      when addr5 =>
-        if (shift(0) = I2C_SLAVE_ADDR(4)) then
-          sm_state <=  addr4;
-        else
-          sm_state <=  idle;
-        end if;
-      when addr4 =>
-        if (shift(0) = I2C_SLAVE_ADDR(3)) then
-          sm_state <=  addr3;
-        else
-          sm_state <=  idle;
-        end if;
-      when addr3 =>
-        if (shift(0) = I2C_SLAVE_ADDR(2)) then
-          sm_state <=  addr2;
-        else
-          sm_state <=  idle;
-        end if;
-      when addr2 =>
-        if (shift(0) = I2C_SLAVE_ADDR(1)) then
-          sm_state <=  addr1;
-        else
-          sm_state <=  idle;
-        end if;
-      when addr1 =>
-        if (shift(0) = I2C_SLAVE_ADDR(0)) then
-          sm_state <=  det_rw;
-          r_w_t      <=  sda_in;         -- store the read / write direction bit
-        else
-          sm_state <=  idle;
-        end if;
-      when det_rw =>
-        sm_state <=  ack;
-      when ack => 
-        if (ready = '1') then
-          sm_state <=  data7;
-          vld_plse <=  '0';
-        else
-          sm_state <= idle;
-          vld_plse <= '0';
-        end if;
-      when data7 =>
-        if (stop_t = '1') then
-          sm_state <= idle;         -- detect stop signal from Master
-        elsif (start_t = '1') then
-          sm_state <= addr7;             -- detect RESTART signal from Master
-        else
-          sm_state <= data6;
-        end if;
-      when data6 => sm_state <= data5;
-      when data5 => sm_state <= data4;
-      when data4 => sm_state <= data3;
-      when data3 => sm_state <= data2;
-      when data2 => sm_state <= data1;
-      when data1 => 
-        sm_state <= data0;
-        vld_plse <= '1';
-      when data0 =>
-        vld_plse <= '0';   -- detect repeated read, write or read/write
-        if ((sda_in = '0') and (r_w_t = '0')) then -- 0 means acknowledged
-          sm_state <= ack;
-        elsif ((sda_in = '0') and (r_w_t = '1')) then -- 0 means acknowledged
-          sm_state <= ack;
-        else
-          sm_state <= idle;
-        end if;
-      when others =>
-        sm_state <= idle;  -- default state
-    end case;
-  end if;        
-end process;
+    end process;
 
---********************************************
--- Read cycle (slave trasmit, master receive)
--- Write Cycle (slave receive, master transmit)
--- Slave generate ACKOUT during write cycle
---********************************************
+    scl_rise  <= '1' when (scl_prev = '0' and scl_filt = '1') else '0';
+    scl_fall  <= '1' when (scl_prev = '1' and scl_filt = '0') else '0';
 
-process(scl_in,XRESET)
-begin                                      -- data should be ready on SDA line when SCL is high
-  if (XRESET = '1') then
-    ack_out <= '0';
-  elsif falling_edge(scl_in) then
-    if (sm_state = det_rw) then
-      ack_out <= '1';
-    elsif (sm_state = data0) then
-      if (r_w_t = '0') then              		-- if slave is rx, acknowledge after successful receive
-        ack_out <= '1';
-      else                                     -- if slave is tx, acknowledge comes from Master
-        ack_out <= '0';
-      end if;
-    else
-      ack_out <= '0';
-    end if;
-  end if;
-end process;
+    start_det <= '1' when (sda_prev = '1' and sda_filt = '0' and scl_filt = '1') else '0';
+    stop_det  <= '1' when (sda_prev = '0' and sda_filt = '1' and scl_filt = '1') else '0';
 
---********************************************
--- Enable starting from ACK state
---********************************************
-process(scl_in,XRESET)
-begin
-  if (XRESET = '1') then
-   sda_en <= '0';
-  elsif falling_edge(scl_in) then
-    if (r_w_t = '1' and (sm_state = ack)) then
-      sda_en <= not data_in(7);
-    elsif (r_w_t = '1' and ((sm_state > ack) and (sm_state < data0))) then
-      sda_en <= not shift(6);
-    else
-      sda_en <= '0';
-    end if;
-  end if;
-end process;
 
---********************************************
--- SDA OE cntr gen '1' will pull the line low
---********************************************
-sda_oe <= '1' when ((ack_out = '1') or (sda_en = '1')) else '0';  -- sda_out is logic '0' at the top level
-scl_oe <= '1' when ((sm_state = ack) and (ready = '0')) else '0'; -- if scl_oe = 1, then scl is pulled down
+    --------------------------------------------------------------------
+    -- I2C slave FSM
+    --------------------------------------------------------------------
+    process(sysclk, XRESET)
+        variable rx_byte : std_logic_vector(7 downto 0);
+    begin
+        if XRESET = '1' then
+            state            <= ST_IDLE;
+            bit_cnt          <= 7;
+            rx_shift         <= (others => '0');
+            tx_shift         <= (others => '0');
+            rw_reg           <= '1';
 
---*******************************
--- Shift operation for READ data
---*******************************
+            sda_oe_reg       <= '0';
+            scl_oe_reg       <= '0';
 
-process(scl_in,XRESET)
-begin
- if (XRESET = '1') then  -- Reset added to make it work
-   shift <= (others => '0');
- elsif falling_edge(scl_in) then
-   if ((sm_state = idle) and (start_t = '1')) then
-     shift(0) <= sda_in;
-   elsif ((sm_state >= addr7) and (sm_state <= addr1)) then
-     shift(0) <= sda_in;
-   elsif (r_w_t = '1' and (sm_state = ack)) then  -- 2nd version
-     shift <= data_in;                -- load the GPIO data into shift registers
-   elsif ((sm_state > ack) and (sm_state <= data0)) then -- start shift the data out to SDA line
-      shift(7 downto 1) <= shift(6 downto 0);
-      shift(0) <= sda_in;
-   end if;
- end if;
-end process;
---********************************************
--- data output register
---********************************************
-process(scl_in,XRESET)
-begin
-  if (XRESET = '1') then
-    data_int <= (others => '0');
-  elsif rising_edge(scl_in) then
-    if (r_w_t = '0' and ack_out = '1' and vld_plse = '1') then
-      data_int <= shift;
-    end if;
-  end if;
-end process;
+            start_reg        <= '0';
+            stop_reg         <= '0';
+            data_vld_reg     <= '0';
+            data_out_reg     <= (others => '0');
 
-data_out <= data_int;
-data_vld <= vld_plse; 
-r_w <= r_w_t;
-start <= start_t;
-stop <= stop_t;
-end arch;
+            ack_value        <= '0';
+            ack_phase        <= '0';
+
+            read_ack_sampled <= '0';
+            read_more        <= '0';
+
+        elsif rising_edge(sysclk) then
+
+            ----------------------------------------------------------------
+            -- default pulse outputs
+            ----------------------------------------------------------------
+            start_reg    <= '0';
+            stop_reg     <= '0';
+            data_vld_reg <= '0';
+
+            -- 今回は clock stretch しない
+            scl_oe_reg <= '0';
+
+            ----------------------------------------------------------------
+            -- START / STOP detect
+            ----------------------------------------------------------------
+            if start_det = '1' then
+                start_reg        <= '1';
+                state            <= ST_ADDR;
+                bit_cnt          <= 7;
+                rx_shift         <= (others => '0');
+                sda_oe_reg       <= '0';
+                ack_value        <= '0';
+                ack_phase        <= '0';
+                read_ack_sampled <= '0';
+
+            elsif stop_det = '1' then
+                stop_reg         <= '1';
+                state            <= ST_IDLE;
+                bit_cnt          <= 7;
+                sda_oe_reg       <= '0';
+                ack_value        <= '0';
+                ack_phase        <= '0';
+                read_ack_sampled <= '0';
+
+            else
+
+                case state is
+
+                    --------------------------------------------------------
+                    -- Wait state
+                    --------------------------------------------------------
+                    when ST_IDLE =>
+                        sda_oe_reg <= '0';
+
+
+                    --------------------------------------------------------
+                    -- Receive slave address + R/W bit
+                    --------------------------------------------------------
+                    when ST_ADDR =>
+                        if scl_rise = '1' then
+                            rx_byte := rx_shift;
+                            rx_byte(bit_cnt) := sda_filt;
+                            rx_shift <= rx_byte;
+
+                            if bit_cnt = 0 then
+                                if (rx_byte(7 downto 1) = I2C_SLAVE_ADDR) and (ready = '1') then
+                                    rw_reg    <= rx_byte(0);
+                                    ack_value <= '1';  -- ACK
+                                else
+                                    rw_reg    <= rx_byte(0);
+                                    ack_value <= '0';  -- NACK
+                                end if;
+
+                                state     <= ST_ADDR_ACK;
+                                ack_phase <= '0';
+                            else
+                                bit_cnt <= bit_cnt - 1;
+                            end if;
+                        end if;
+
+
+                    --------------------------------------------------------
+                    -- ACK after address byte
+                    --------------------------------------------------------
+                    when ST_ADDR_ACK =>
+                        if scl_fall = '1' then
+                            if ack_phase = '0' then
+                                -- SCL low during ACK bit: pull SDA low if ACK
+                                sda_oe_reg <= ack_value;
+                                ack_phase  <= '1';
+                            else
+                                -- ACK bit finished
+                                sda_oe_reg <= '0';
+                                ack_phase  <= '0';
+
+                                if ack_value = '0' then
+                                    state <= ST_IDLE;
+                                else
+                                    if rw_reg = '0' then
+                                        -- master write
+                                        state   <= ST_WRITE;
+                                        bit_cnt <= 7;
+                                    else
+                                        -- master read
+                                        tx_shift   <= data_in;
+                                        state      <= ST_READ;
+                                        bit_cnt    <= 7;
+                                        sda_oe_reg <= not data_in(7); -- first read bit
+                                    end if;
+                                end if;
+                            end if;
+                        end if;
+
+
+                    --------------------------------------------------------
+                    -- Receive write data byte
+                    --------------------------------------------------------
+                    when ST_WRITE =>
+                        if scl_rise = '1' then
+                            rx_byte := rx_shift;
+                            rx_byte(bit_cnt) := sda_filt;
+                            rx_shift <= rx_byte;
+
+                            if bit_cnt = 0 then
+                                data_out_reg <= rx_byte;
+                                data_vld_reg <= '1';
+
+                                if ready = '1' then
+                                    ack_value <= '1';
+                                else
+                                    ack_value <= '0';
+                                end if;
+
+                                state     <= ST_WRITE_ACK;
+                                ack_phase <= '0';
+                            else
+                                bit_cnt <= bit_cnt - 1;
+                            end if;
+                        end if;
+
+
+                    --------------------------------------------------------
+                    -- ACK after write data byte
+                    --------------------------------------------------------
+                    when ST_WRITE_ACK =>
+                        if scl_fall = '1' then
+                            if ack_phase = '0' then
+                                sda_oe_reg <= ack_value;
+                                ack_phase  <= '1';
+                            else
+                                sda_oe_reg <= '0';
+                                ack_phase  <= '0';
+
+                                if ack_value = '1' then
+                                    state   <= ST_WRITE;
+                                    bit_cnt <= 7;
+                                else
+                                    state <= ST_IDLE;
+                                end if;
+                            end if;
+                        end if;
+
+
+                    --------------------------------------------------------
+                    -- Transmit read data byte
+                    --------------------------------------------------------
+                    when ST_READ =>
+                        if scl_fall = '1' then
+                            if bit_cnt = 0 then
+                                -- release SDA for master ACK/NACK
+                                sda_oe_reg       <= '0';
+                                state            <= ST_READ_ACK;
+                                read_ack_sampled <= '0';
+                            else
+                                bit_cnt    <= bit_cnt - 1;
+                                sda_oe_reg <= not tx_shift(bit_cnt - 1);
+                            end if;
+                        end if;
+
+
+                    --------------------------------------------------------
+                    -- Master ACK/NACK after read byte
+                    --------------------------------------------------------
+                    when ST_READ_ACK =>
+
+                        if scl_rise = '1' then
+                            -- ACK = SDA low, NACK = SDA high
+                            if sda_filt = '0' then
+                                read_more <= '1';
+                            else
+                                read_more <= '0';
+                            end if;
+
+                            read_ack_sampled <= '1';
+                        end if;
+
+                        if (scl_fall = '1') and (read_ack_sampled = '1') then
+                            read_ack_sampled <= '0';
+
+                            if read_more = '1' then
+                                -- sequential read fallback
+                                -- reg_ctrl側でアドレス自動更新はしないので、
+                                -- 必要ならreg_ctrl側も拡張する
+                                tx_shift   <= data_in;
+                                bit_cnt    <= 7;
+                                state      <= ST_READ;
+                                sda_oe_reg <= not data_in(7);
+                            else
+                                sda_oe_reg <= '0';
+                                state      <= ST_IDLE;
+                            end if;
+                        end if;
+
+
+                    when others =>
+                        state      <= ST_IDLE;
+                        sda_oe_reg <= '0';
+
+                end case;
+            end if;
+        end if;
+    end process;
+
+END RTL;
+

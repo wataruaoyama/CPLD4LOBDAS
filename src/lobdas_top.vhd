@@ -60,6 +60,8 @@ PORT(
 	RSV1		: out std_logic;
 	TP1		: in std_logic;
 	TP2		: in std_logic;
+	BCLK_ESP	: out std_logic;
+	LRCK_ESP	: out std_logic;
 	ESPRST	: out std_logic
 );
 END lobdas_top;
@@ -429,7 +431,7 @@ xdsd <= not idp;
 --TP2 <= inselo(1);
 selectSource <= TP2 & TP1;
 
-mclken <= mclkeni or '1';
+mclken <= mclkeni or '0';
 
 process(DEVNAME, idp, ibclk1, ibclk2, imclk1, imclk2, mclken) begin
 	if (DEVNAME(2 downto 0) = "011") then	-- BD34301EKV
@@ -460,6 +462,9 @@ process(BBB_MCLK, xrst) begin
 end process;
 
 ex_mclk <= BBB_MCLK when insel(0) = '1' else DIV_BBB_MCLK;
-rsv2 <= '1' or rsv2i;
+rsv2 <= '0' or rsv2i;
+
+BCLK_ESP <= ibclk1;
+LRCK_ESP <= ilrck1;
 
 end RTL;
