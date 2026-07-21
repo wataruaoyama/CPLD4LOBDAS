@@ -99,16 +99,6 @@ process(BBB_MCLK,BBB_BCLK,BBB_LRCK,BBB_DATA,RJ4_MCLK,RJ4_BCLK,RJ4_LRCK,RJ4_DATA,
 		LRCK2 <= BBB_LRCK;
 		DATA1 <= BBB_DATA;
 		DATA2 <= BBB_DATA;		
---	elsif inselo = "11" then
---		DP <= USB_DP;
---		MCLK1 <= USB_MCLK;
---		MCLK2 <= USB_MCLK;
---		BCLK1 <= USB_BCLK;
---		BCLK2 <= USB_BCLK;
---		LRCK1 <= USB_LRCK;
---		LRCK2 <= USB_LRCK;
---		DATA1 <= USB_DATA;
---		DATA2 <= USB_DATA;
 	else
 		DP <= USB_DP;
 		MCLK1 <= USB_MCLK;
@@ -121,25 +111,6 @@ process(BBB_MCLK,BBB_BCLK,BBB_LRCK,BBB_DATA,RJ4_MCLK,RJ4_BCLK,RJ4_LRCK,RJ4_DATA,
 		DATA2 <= USB_DATA;		
 	end if;
 end process;
-
---process(USB_FS,USB_DP,DET_FS,DET_D256,DET_D64,DET_DP,INSELO) begin
---	if inselo = "00" or inselo = "11" then
---		FS <= USB_FS;
---		DP <= USB_DP;
---		D256_512 <= DET_D256;
---		D64_128 <= DET_D64;
---	elsif inselo = "01" or inselo = "10" then
---		FS <= DET_FS;
---		DP <= DET_DP;
---		D256_512 <= DET_D256;
---		D64_128 <= DET_D64;
---	else
---		FS <= USB_FS;
---		DP <= USB_DP;
---		D256_512 <= DET_D256;
---		D64_128 <= DET_D64;
---	end if;
---end process;
 
 FS <= DET_FS;
 --DP <= DET_DP;

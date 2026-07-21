@@ -140,23 +140,6 @@ end process;
 
 ebck <= dbck(2) and not dbck(1);
 
---process(CLK49M)
---begin
---    if CLK49M'event and CLK49M = '1' then
---
---        -- CPOK='1' かつ DSD時だけ dcount を更新する。
---        -- CPOK='0' または XDSD='1' のときは何も代入しないので、
---        -- dcount は直前値を保持する。
---        if CPOK = '1' and XDSD = '0' then
---            if dbck(2) = '0' then
---                dcount <= "0000";
---            else
---                dcount <= dcount + '1';
---            end if;
---        end if;
---
---    end if;
---end process;
 process(CPOK,CLK49M,XDSD) begin
 	if CPOK = '0' or XDSD = '1' then
 		dcount <= "0000";
@@ -169,48 +152,6 @@ process(CPOK,CLK49M,XDSD) begin
 	end if;
 end process;
 
---process(CPOK, CLK49M)
---begin
---    if CPOK = '0' then
---        d256_512    <= '0';
---        d64_128     <= '0';
---        d512_pending <= '0';
---
---    elsif CLK49M'event and CLK49M = '1' then
---
---        if XDSD = '0' then
---            if ebck = '1' then
---
---                if dcount = "0000" then
---                    if d512_pending = '1' then
---                        d256_512 <= '1';
---                        d64_128  <= '1';
---                    end if;
---                    d512_pending <= '1';
---
---                elsif dcount = "0010" then
---                    d256_512    <= '1';
---                    d64_128     <= '0';
---                    d512_pending <= '0';
---
---                elsif dcount = "0100" then
---                    d256_512    <= '0';
---                    d64_128     <= '1';
---                    d512_pending <= '0';
---
---                elsif dcount = "1000" then
---                    d256_512    <= '0';
---                    d64_128     <= '0';
---                    d512_pending <= '0';
---
---                else
---                    d512_pending <= '0';
---                end if;
---
---            end if;
---        end if;
---    end if;
---end process;
 process(CPOK,CLK49M,dcount) begin
 	if CPOK = '0' then
 		d256_512 <= '0';
@@ -221,7 +162,6 @@ process(CPOK,CLK49M,dcount) begin
 				d256_512 <= '1';
 				d64_128 <= '1';
 			elsif dcount = "0010" then		-- DSD256
---			if dcount = "0010" then		-- DSD256
 				d256_512 <= '1';
 				d64_128 <= '0';
 			elsif dcount = "0100" then		-- DSD128

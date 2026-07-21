@@ -66,10 +66,6 @@ process(bclk,xrst) begin
 		if dp_int = '0' then
 			if sreg = X"6969" then --0110100101101001" then
 				dp_int <= '1';
---			elsif sreg = "0101010101010101" then
---				dp_int <= '1';
---			elsif sreg = "0011001100110011" then
---				dp_int <= '1';
 			else
 				dp_int <= dp_int;
 			end if;
@@ -77,8 +73,6 @@ process(bclk,xrst) begin
 --			if count = "11111" then
 			if cnt = "011" then
 				dp_int <= '0';
---			else
---				dp_int <= dp_int;
 			end if;
 		end if;
 	end if;

@@ -427,8 +427,6 @@ LRCK1 <= ilrck1;
 DP <= idp;
 xdsd <= not idp;
 
---TP1 <= inselo(0);
---TP2 <= inselo(1);
 selectSource <= TP2 & TP1;
 
 mclken <= mclkeni or '0';
@@ -462,6 +460,7 @@ process(BBB_MCLK, xrst) begin
 end process;
 
 ex_mclk <= BBB_MCLK when insel(0) = '1' else DIV_BBB_MCLK;
+
 rsv2 <= '0' or rsv2i;
 
 BCLK_ESP <= ibclk1;
