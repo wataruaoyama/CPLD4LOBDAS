@@ -31,10 +31,6 @@ PORT(
 		DATA1		: out std_logic;
 		BCLK1		: out std_logic;
 		MCLK1		: out std_logic;
-		LRCK2		: out std_logic;
-		DATA2		: out std_logic;
-		BCLK2		: out std_logic;
-		MCLK2		: out std_logic;
 		FS			: out std_logic_vector(3 downto 0);
 		DP			: out std_logic;
 		D256_512	: out std_logic;
@@ -51,69 +47,44 @@ process(BBB_MCLK,BBB_BCLK,BBB_LRCK,BBB_DATA,RJ4_MCLK,RJ4_BCLK,RJ4_LRCK,RJ4_DATA,
 		DP <= USB_DP;
 		if CHLR = '0' then		
 			MCLK1 <= USB_MCLK;
-			MCLK2 <= USB_MCLK;
 			BCLK1 <= USB_BCLK;
-			BCLK2 <= USB_BCLK;
 			LRCK1 <= USB_LRCK;
-			LRCK2 <= USB_LRCK;
 			DATA1 <= USB_DATA;
-			DATA2 <= USB_DATA;
 		else
 			if USB_DP = '1' then
 				MCLK1 <= USB_MCLK;
-				MCLK2 <= USB_MCLK;
 				BCLK1 <= USB_BCLK;
-				BCLK2 <= USB_BCLK;
 				LRCK1 <= USB_DATA;
-				LRCK2 <= USB_DATA;
 				DATA1 <= USB_LRCK;
-				DATA2 <= USB_LRCK;
 			else
 				MCLK1 <= USB_MCLK;
-				MCLK2 <= USB_MCLK;
 				BCLK1 <= USB_BCLK;
-				BCLK2 <= USB_BCLK;
 				LRCK1 <= USB_LRCK;
-				LRCK2 <= USB_LRCK;
 				DATA1 <= USB_DATA;
-				DATA2 <= USB_DATA;
 			end if;
 		end if;
 	elsif inselo = "01" then
 		DP <= DET_DP;
 		MCLK1 <= RJ4_MCLK;
-		MCLK2 <= RJ4_MCLK;
 		BCLK1 <= RJ4_BCLK;
-		BCLK2 <= RJ4_BCLK;
 		LRCK1 <= RJ4_LRCK;
-		LRCK2 <= RJ4_LRCK;
-		DATA1 <= RJ4_DATA;
-		DATA2 <= RJ4_DATA;		
+		DATA1 <= RJ4_DATA;	
 	elsif inselo = "10" then
 		DP <= DET_DP;
 		MCLK1 <= BBB_MCLK;
-		MCLK2 <= BBB_MCLK;
 		BCLK1 <= BBB_BCLK;
-		BCLK2 <= BBB_BCLK;
 		LRCK1 <= BBB_LRCK;
-		LRCK2 <= BBB_LRCK;
-		DATA1 <= BBB_DATA;
-		DATA2 <= BBB_DATA;		
+		DATA1 <= BBB_DATA;	
 	else
 		DP <= USB_DP;
 		MCLK1 <= USB_MCLK;
-		MCLK2 <= USB_MCLK;
 		BCLK1 <= USB_BCLK;
-		BCLK2 <= USB_BCLK;
 		LRCK1 <= USB_LRCK;
-		LRCK2 <= USB_LRCK;
-		DATA1 <= USB_DATA;
-		DATA2 <= USB_DATA;		
+		DATA1 <= USB_DATA;	
 	end if;
 end process;
 
 FS <= DET_FS;
---DP <= DET_DP;
 D256_512 <= DET_D256;
 D64_128 <= DET_D64;
 		

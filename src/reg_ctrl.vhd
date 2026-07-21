@@ -37,7 +37,6 @@ PORT(
     D64_128  : in std_logic;
     DSDON    : in std_logic;
     F        : in std_logic_vector(3 downto 0);
-    BCK16    : in std_logic;
 
     ready    : out std_logic;
     data_out : out std_logic_vector(7 DOWNTO 0);
@@ -203,7 +202,7 @@ BEGIN
     rd_reg2(1) <= DSDD;
     rd_reg2(0) <= DSDF;
 
-    rd_reg3(7) <= BCK16;
+    rd_reg3(7) <= '0';
     rd_reg3(6) <= D256_512;
     rd_reg3(5) <= F(3);
     rd_reg3(4) <= F(2);

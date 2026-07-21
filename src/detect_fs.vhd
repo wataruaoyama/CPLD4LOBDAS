@@ -14,8 +14,8 @@ PORT(
 		CPOK			: IN std_logic;
 		DSD64_128	: OUT std_logic;
 		DSD256_512	: OUT std_logic;
-		FS				: OUT std_logic_vector(3 downto 0);
-		BCK16			: out std_Logic);
+		FS				: OUT std_logic_vector(3 downto 0)
+		);
 END detect_fs;
 
 ARCHITECTURE RTL OF detect_fs IS
@@ -124,8 +124,8 @@ process(MCLK) begin
 			elsif q="1000" then
 				f <= "1000";
 			end if;
-		else
-			f <= f;
+--		else
+--			f <= f;
 		end if;
 	end if;
 end process;
@@ -171,9 +171,9 @@ process(CPOK,CLK49M,dcount) begin
 				d256_512 <= '0';
 				d64_128 <= '0';
 			end if;
-		else
-			d256_512 <= d256_512;
-			d64_128 <= d64_128;
+--		else
+--			d256_512 <= d256_512;
+--			d64_128 <= d64_128;
 		end if;
 	end if;
 end process;
