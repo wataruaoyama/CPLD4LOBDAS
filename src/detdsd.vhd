@@ -1,7 +1,7 @@
 Library IEEE;
 USE IEEE.std_logic_1164.ALL;
-USE WORK.ALL;
 USE IEEE.std_logic_unsigned.ALL;
+USE WORK.ALL;
 
 ENTITY detdsd IS
 PORT(
@@ -52,8 +52,6 @@ process (bclk,xrst) begin
 			cnt <= cnt + 1;
 		elsif cnt = "011" then
 			cnt <= "000";
---		else
---			cnt <= cnt;
 		end if;
 	end if;
 end process;
@@ -70,7 +68,6 @@ process(bclk,xrst) begin
 				dp_int <= dp_int;
 			end if;
 		elsif dp_int = '1' then
---			if count = "11111" then
 			if cnt = "011" then
 				dp_int <= '0';
 			end if;
