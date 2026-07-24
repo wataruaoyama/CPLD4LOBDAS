@@ -44,9 +44,9 @@ PORT(
 	DSDON		: in std_logic;
 	F			: in std_logic_vector(3 downto 0);
 	scl_in	: in std_logic;
-	scl_out	: out std_logic;
+--	scl_out	: out std_logic;
 	sda		: inout std_logic;
-	sda_out	: out std_logic;	-- dummy pin
+--	sda_out	: out std_logic;	-- dummy pin
 	DP			: out std_logic;
 	LRCK1		: out std_logic;
 	DATA1		: out std_logic;
@@ -58,8 +58,8 @@ PORT(
 	MCLK2		: out std_logic;
 	RSV2		: out std_logic;
 	RSV1		: out std_logic;
-	TP1		: in std_logic;
-	TP2		: in std_logic;
+	TP3		: in std_logic;
+	TP6		: in std_logic;
 	BCLK_ESP	: out std_logic;
 	LRCK_ESP	: out std_logic;
 	ESPRST	: out std_logic
@@ -257,6 +257,8 @@ signal mclkeni				: std_logic;
 signal selectSource		: std_logic_vector(1 downto 0);
 signal idata1				: std_logic;
 signal inselo				: std_logic_vector(1 downto 0);
+signal sda_out				: std_logic;
+signal scl_out				: std_logic;
 
 begin
 
@@ -326,7 +328,7 @@ R1 : reg_ctrl port map(
 
 SEL : select_in port map(
 	xrst => xrst, 
-	INSELO => selectSource, --inselo, 
+	INSELO => inselo, --selectSource, 
 	BBB_MCLK => ex_mclk, 
 	BBB_BCLK => bbb_bclk, 
 	BBB_LRCK => bbb_lrck, 
@@ -371,8 +373,6 @@ DATA1 <= idata1;
 DATA2 <= idata1;
 
 DP <= idp;
-
-selectSource <= TP2 & TP1;
 
 mclken <= mclkeni or '0';
 
