@@ -166,7 +166,7 @@ PORT(
 		bclk			: in std_logic;
 		lrck			: in std_logic;
 		data			: in std_logic;
-		bckdsdclk	: out std_logic;
+		bck_dsdck	: out std_logic;
 		lrck_dsdr	: out std_logic;
 		data_dsdl	: out std_logic
 );
@@ -259,6 +259,9 @@ signal idata1				: std_logic;
 signal inselo				: std_logic_vector(1 downto 0);
 signal sda_out				: std_logic;
 signal scl_out				: std_logic;
+signal bck_dsdck			: std_logic;
+signal lrck_dsdr			: std_logic;
+signal data_dsdl			: std_logic;
 
 begin
 
@@ -363,14 +366,25 @@ ESP : espReset PORT map(
 	CLK49M => clk49m, 
 	ESPRST => esprst
 	);
+	
+DOP1 : dop PORT map(
+	xrst => xrst,
+	mclk => imclk1,
+	bclk => ibclk1,
+	lrck => ilrck1,
+	data => idata1,
+	bck_dsdck => bck_dsdck,
+	lrck_dsdr => lrck_dsdr,
+	data_dsdl => data_dsdl
+	);
 
 
-BCLK1 <= ibclk1;
-BCLK2 <= ibclk1;
-LRCK1 <= ilrck1;
-LRCK2 <= ilrck1;
-DATA1 <= idata1;
-DATA2 <= idata1;
+BCLK1 <= bck_dsdck;
+BCLK2 <= bck_dsdck;
+LRCK1 <= lrck_dsdr;
+LRCK2 <= lrck_dsdr;
+DATA1 <= data_dsdl;
+DATA2 <= data_dsdl;
 
 DP <= idp;
 
@@ -408,7 +422,7 @@ ex_mclk <= BBB_MCLK when insel(0) = '1' else DIV_BBB_MCLK;
 
 rsv2 <= '0' or rsv2i;
 
-BCLK_ESP <= ibclk1;
-LRCK_ESP <= ilrck1;
+BCLK_ESP <= bck_dsdck;
+LRCK_ESP <= lrck_dsdr;
 
 end RTL;
