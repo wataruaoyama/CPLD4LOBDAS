@@ -125,6 +125,7 @@ PORT(
 	OPT0		: in std_logic;
 	OPT1		: in std_logic;
 	PLUGED	: in std_logic;
+	DOP_VLD	: in std_logic;
 	ready		: out  std_logic;                     	-- back end system ready signal
 	data_out	: out std_logic_vector(7 DOWNTO 0); 	--data to i2c_slave module
 	INSELO	: out std_logic_vector(1 downto 0);
@@ -168,7 +169,9 @@ PORT(
 		data			: in std_logic;
 		bck_dsdck	: out std_logic;
 		lrck_dsdr	: out std_logic;
-		data_dsdl	: out std_logic
+		data_dsdl	: out std_logic;
+      dop_valid	: out std_logic;
+      dop_locked	: out std_logic
 );
 END component;
 
@@ -262,6 +265,9 @@ signal scl_out				: std_logic;
 signal bck_dsdck			: std_logic;
 signal lrck_dsdr			: std_logic;
 signal data_dsdl			: std_logic;
+signal dop_valid			: std_logic;
+signal dop_locked			: std_logic;
+signal DOP_VLD				: std_logic;
 
 begin
 
@@ -321,6 +327,7 @@ R1 : reg_ctrl port map(
 	OPT0 => opt0, 
 	OPT1 => opt1, 
 	PLUGED => pluged, 
+	DOP_VLD => dop_valid,
 	ready => ready,
 	data_out => data_out, 
 	INSELO => inselo,
@@ -375,7 +382,9 @@ DOP1 : dop PORT map(
 	data => idata1,
 	bck_dsdck => bck_dsdck,
 	lrck_dsdr => lrck_dsdr,
-	data_dsdl => data_dsdl
+	data_dsdl => data_dsdl,
+	dop_valid => dop_vld,
+	dop_locked => dop_locked
 	);
 
 

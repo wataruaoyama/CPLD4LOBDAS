@@ -33,6 +33,7 @@ PORT(
     OPT0     : in std_logic;
     OPT1     : in std_logic;
     PLUGED   : in std_logic;
+	 DOP_VLD	 : in std_logic;
 
     ready    : out std_logic;
     data_out : out std_logic_vector(7 DOWNTO 0);
@@ -198,14 +199,14 @@ BEGIN
     rd_reg2(1) <= DSDD;
     rd_reg2(0) <= DSDF;
 
-    rd_reg3(7) <= '0';
+    rd_reg3(7) <= DOP_VLD;
     rd_reg3(6) <= '0'; --D256_512;
     rd_reg3(5) <= '0'; --F(3);
     rd_reg3(4) <= '0'; --F(2);
     rd_reg3(3) <= '0'; --F(1);
     rd_reg3(2) <= '0'; --F(0);
     rd_reg3(1) <= '0'; --64_128;
-    rd_reg3(0) <= '0'; --DSDON;
+    rd_reg3(0) <= '0';
 
 
     --------------------------------------------------------------------
