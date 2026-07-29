@@ -58,8 +58,15 @@ PORT(
 	MCLK2		: out std_logic;
 	RSV2		: out std_logic;
 	RSV1		: out std_logic;
-	TP3		: in std_logic;
-	TP6		: in std_logic;
+	
+-- ESP32 GPIO26から入力
+-- Highでデジタルミュート
+	MUTE_REQ	: in std_logic;
+	
+-- ESP32 GPIO33から入力
+-- High=DSD、Low=PCM
+	DSD_MODE : in std_logic;
+	
 	BCLK_ESP	: out std_logic;
 	LRCK_ESP	: out std_logic;
 	ESPRST	: out std_logic
@@ -68,370 +75,450 @@ END lobdas_top;
 
 ARCHITECTURE RTL OF lobdas_top IS
 
-component i2c_slave
-port (
-	-- generic ports
-	 XRESET  : in  std_logic;                     -- System Reset
-	 sysclk	: in	std_logic;
-	 ready   : in  std_logic;                     -- back end system ready signal
-	 start   : out std_logic;                     -- start of the i2c cycle
-	 stop    : out std_logic;                     -- stop the i2c cycle
-	 data_in : in  std_logic_vector(7 DOWNTO 0);  -- parallel data in
-	 data_out: out std_logic_vector(7 DOWNTO 0);  -- parallel data out
-	 r_w     : out std_logic;                     -- read/write signal to the reg_map bloc
-	 data_vld: out std_logic;                     -- data valid from i2c
-	-- i2c ports
-	 scl_in  : in std_logic;                      -- SCL clock line
-	 scl_oe  : out std_logic;                     -- controls scl output enable
-	 sda_in  : in std_logic;                      -- i2c serial data line in
-	 sda_oe  : out std_logic                      -- controls sda output enable
- );
-end component;
+	component i2c_slave
+	port (
+		-- generic ports
+		 XRESET  : in  std_logic;                     -- System Reset
+		 sysclk	: in	std_logic;
+		 ready   : in  std_logic;                     -- back end system ready signal
+		 start   : out std_logic;                     -- start of the i2c cycle
+		 stop    : out std_logic;                     -- stop the i2c cycle
+		 data_in : in  std_logic_vector(7 DOWNTO 0);  -- parallel data in
+		 data_out: out std_logic_vector(7 DOWNTO 0);  -- parallel data out
+		 r_w     : out std_logic;                     -- read/write signal to the reg_map bloc
+		 data_vld: out std_logic;                     -- data valid from i2c
+		-- i2c ports
+		 scl_in  : in std_logic;                      -- SCL clock line
+		 scl_oe  : out std_logic;                     -- controls scl output enable
+		 sda_in  : in std_logic;                      -- i2c serial data line in
+		 sda_oe  : out std_logic                      -- controls sda output enable
+	 );
+	end component;
 
-component i2c_inout
-PORT(
-	a  :  IN STD_LOGIC;  	-- Output Data Signal (to INOUT pin)
-	en	:  IN STD_LOGIC;  	-- Output Enable Signal
-	b  :  INOUT STD_LOGIC;  -- INOUT Port
-	c  :  OUT STD_LOGIC  	-- Input Signal (from INOUT pin)
-);
-end component;
+	component i2c_inout
+	PORT(
+		a  :  IN STD_LOGIC;  	-- Output Data Signal (to INOUT pin)
+		en	:  IN STD_LOGIC;  	-- Output Enable Signal
+		b  :  INOUT STD_LOGIC;  -- INOUT Port
+		c  :  OUT STD_LOGIC  	-- Input Signal (from INOUT pin)
+	);
+	end component;
 
-component reg_ctrl
-PORT(
-	reset		: in  std_logic;                     	-- System Reset
-	sysclk	: in std_logic;
-	start   	: in std_logic;                     	-- start of the i2c cycle
-	stop    	: in std_logic;                     	-- stop the i2c cycle
-	r_w     	: in std_logic;                     	-- read/write signal to the reg_map bloc
-	data_vld	: in std_logic;                     	-- data valid from i2c
-	data_in	: in  std_logic_vector(7 DOWNTO 0);  	-- data from i2c_slave
-	DEM		: in std_logic;
-	DSDD		: in std_logic;
-	DSDF		: in std_logic;
-	MONO1		: in std_logic;
-	MONO0		: in std_logic;
-	DSDSEL1	: in std_logic;
-	DSDSEL0	: in std_logic;
-	DIF2		: in std_logic;
-	DIF1		: in std_logic;
-	DIF0		: in std_logic;
-	DSDPATH	: in std_logic;
-	GC1		: in std_logic;
-	GC0		: in std_logic;
-	DEVNAME	: in std_logic_vector(2 downto 0);
-	CHLR		: in std_logic;
-	INSEL		: in std_logic_vector(1 downto 0);
-	OPT0		: in std_logic;
-	OPT1		: in std_logic;
-	PLUGED	: in std_logic;
-	DOP_VLD	: in std_logic;
-	ready		: out  std_logic;                     	-- back end system ready signal
-	data_out	: out std_logic_vector(7 DOWNTO 0); 	--data to i2c_slave module
-	INSELO	: out std_logic_vector(1 downto 0);
-	RSV2		: out std_logic;
-	RSV1		: out std_logic;
-	MCLKEN	: out std_logic
-);
-end component;
-
-component detect_fs
-PORT(
-		CLK49M		: in std_logic;
-		XDSD			: in std_logic;
-		MCLK			: in std_logic;
-		BCK			: in std_logic;
-		LRCK			: in std_logic;
-		CK_SEL		: in std_logic;
-		CPOK			: IN std_logic;
-		DSD64_128	: OUT std_logic;
-		DSD256_512	: OUT std_logic;
-		FS				: OUT std_logic_vector(3 downto 0)
-		);
-END component;
-
-component detdsd
-PORT(
-		xrst			: in std_logic;
-		mclk			: in std_logic;
-		bclk			: in std_logic;
-		lrck			: in std_logic;
-		dp				: out std_logic
-);
-END component;
-
-component dop
-PORT(
-		xrst			: in std_logic;
-		mclk			: in std_logic;
-		bclk			: in std_logic;
-		lrck			: in std_logic;
-		data			: in std_logic;
-		bck_dsdck	: out std_logic;
-		lrck_dsdr	: out std_logic;
-		data_dsdl	: out std_logic;
-      dop_valid	: out std_logic;
-      dop_locked	: out std_logic
-);
-END component;
-
-component select_in
-PORT(
-		xrst		: in std_logic;
-		INSELO	: in std_logic_vector(1 downto 0);
-		BBB_MCLK	: in std_logic;
-		BBB_BCLK	: in std_logic;
-		BBB_LRCK	: in std_logic;
-		BBB_DATA	: in std_logic;
-		RJ4_DATA	: in std_logic;
-		RJ4_BCLK	: in std_logic;
-		RJ4_LRCK	: in std_logic;
-		RJ4_MCLK	: in std_logic;
-		USB_DATA	: in std_logic;
-		USB_BCLK	: in std_logic;
-		USB_LRCK	: in std_logic;
-		USB_MCLK	: in std_logic;
-		USB_FS	: in std_logic_vector(3 downto 0);
-		USB_DP	: in std_logic;
+	component reg_ctrl
+	PORT(
+		reset		: in  std_logic;                     	-- System Reset
+		sysclk	: in std_logic;
+		start   	: in std_logic;                     	-- start of the i2c cycle
+		stop    	: in std_logic;                     	-- stop the i2c cycle
+		r_w     	: in std_logic;                     	-- read/write signal to the reg_map bloc
+		data_vld	: in std_logic;                     	-- data valid from i2c
+		data_in	: in  std_logic_vector(7 DOWNTO 0);  	-- data from i2c_slave
+		DEM		: in std_logic;
+		DSDD		: in std_logic;
+		DSDF		: in std_logic;
+		MONO1		: in std_logic;
+		MONO0		: in std_logic;
+		DSDSEL1	: in std_logic;
+		DSDSEL0	: in std_logic;
+		DIF2		: in std_logic;
+		DIF1		: in std_logic;
+		DIF0		: in std_logic;
+		DSDPATH	: in std_logic;
+		GC1		: in std_logic;
+		GC0		: in std_logic;
+		DEVNAME	: in std_logic_vector(2 downto 0);
 		CHLR		: in std_logic;
-		LRCK1		: out std_logic;
-		DATA1		: out std_logic;
-		BCLK1		: out std_logic;
-		MCLK1		: out std_logic
-);
-END component;
+		INSEL		: in std_logic_vector(1 downto 0);
+		OPT0		: in std_logic;
+		OPT1		: in std_logic;
+		PLUGED	: in std_logic;
+		DOP_VLD	: in std_logic;
+		ready		: out  std_logic;                     	-- back end system ready signal
+		data_out	: out std_logic_vector(7 DOWNTO 0); 	--data to i2c_slave module
+		INSELO	: out std_logic_vector(1 downto 0);
+		RSV2		: out std_logic;
+		RSV1		: out std_logic;
+		MCLKEN	: out std_logic
+	);
+	end component;
 
-component fs44_48
-PORT(
-		XRST			: in std_logic;
-		CLK49M		: in std_logic;
-		XDSD			: in std_logic;
-		LRCK			: in std_logic;
-		CK_SEL		: out std_logic
-);
-END component;
+	component detect_fs
+	PORT(
+			CLK49M		: in std_logic;
+			XDSD			: in std_logic;
+			MCLK			: in std_logic;
+			BCK			: in std_logic;
+			LRCK			: in std_logic;
+			CK_SEL		: in std_logic;
+			CPOK			: IN std_logic;
+			DSD64_128	: OUT std_logic;
+			DSD256_512	: OUT std_logic;
+			FS				: OUT std_logic_vector(3 downto 0)
+			);
+	END component;
 
-component espReset
-PORT(
-		XRST			: in std_logic;
-		CLK49M		: in std_logic;
-		ESPRST		: out std_logic
-);
-END component;
+	component detdsd
+	PORT(
+			xrst			: in std_logic;
+			mclk			: in std_logic;
+			bclk			: in std_logic;
+			lrck			: in std_logic;
+			dp				: out std_logic
+	);
+	END component;
 
-signal rst					: std_logic;
-signal clk_msec 			: std_logic;
-signal scl_oe				: std_logic;
-signal ina					: std_logic;
-signal sda_in				: std_logic;
-signal ready				: std_logic;
-signal start				: std_logic;
-signal stop					: std_logic;
-signal data_in				: std_logic_vector(7 downto 0);
-signal data_out			: std_logic_vector(7 downto 0);
-signal r_w					: std_logic;
-signal data_vld			: std_logic;
-signal sda_oe				: std_logic;
-signal usb_fs				: std_logic_vector(3 downto 0);
-signal usb_dp				: std_logic;
-signal usb_d64				: std_logic;
-signal det_fs				: std_logic_vector(3 downto 0);
-signal det_dp				: std_logic;
-signal det_d256			: std_logic;
-signal det_d64				: std_logic;
-signal xdsd					: std_logic;
-signal imclk1				: std_logic;
-signal ibclk1				: std_logic;
-signal ilrck1				: std_logic;
-signal ck_sel				: std_logic;
-signal ov96k				: std_logic;
-signal id256_512			: std_logic;
-signal id64_128			: std_logic;
-signal idp					: std_logic;
-signal ifs					: std_logic_vector(3 downto 0);
-signal ibclk2				: std_logic;
-signal imclk2				: std_logic;
-signal mclken				: std_logic;
-signal bck16				: std_logic;
-signal DIV_BBB_MCLK		: std_logic;
-signal ex_mclk				: std_logic;
-signal rsv2i				: std_logic;
-signal mclkeni				: std_logic;
-signal selectSource		: std_logic_vector(1 downto 0);
-signal idata1				: std_logic;
-signal inselo				: std_logic_vector(1 downto 0);
-signal sda_out				: std_logic;
-signal scl_out				: std_logic;
-signal bck_dsdck			: std_logic;
-signal lrck_dsdr			: std_logic;
-signal data_dsdl			: std_logic;
-signal dop_valid			: std_logic;
-signal dop_locked			: std_logic;
-signal DOP_VLD				: std_logic;
+	component dop
+	PORT(
+			xrst			: in std_logic;
+			mclk			: in std_logic;
+			bclk			: in std_logic;
+			lrck			: in std_logic;
+			data			: in std_logic;
+			bck_dsdck	: out std_logic;
+			lrck_dsdr	: out std_logic;
+			data_dsdl	: out std_logic;
+			dop_valid	: out std_logic;
+			dop_locked	: out std_logic
+	);
+	END component;
+
+	component select_in
+	PORT(
+			xrst		: in std_logic;
+			INSELO	: in std_logic_vector(1 downto 0);
+			BBB_MCLK	: in std_logic;
+			BBB_BCLK	: in std_logic;
+			BBB_LRCK	: in std_logic;
+			BBB_DATA	: in std_logic;
+			RJ4_DATA	: in std_logic;
+			RJ4_BCLK	: in std_logic;
+			RJ4_LRCK	: in std_logic;
+			RJ4_MCLK	: in std_logic;
+			USB_DATA	: in std_logic;
+			USB_BCLK	: in std_logic;
+			USB_LRCK	: in std_logic;
+			USB_MCLK	: in std_logic;
+			USB_FS	: in std_logic_vector(3 downto 0);
+			USB_DP	: in std_logic;
+			CHLR		: in std_logic;
+			LRCK1		: out std_logic;
+			DATA1		: out std_logic;
+			BCLK1		: out std_logic;
+			MCLK1		: out std_logic
+	);
+	END component;
+
+	component fs44_48
+	PORT(
+			XRST			: in std_logic;
+			CLK49M		: in std_logic;
+			XDSD			: in std_logic;
+			LRCK			: in std_logic;
+			CK_SEL		: out std_logic
+	);
+	END component;
+
+	component espReset
+	PORT(
+			XRST			: in std_logic;
+			CLK49M		: in std_logic;
+			ESPRST		: out std_logic
+	);
+	END component;
+
+	signal rst					: std_logic;
+	signal clk_msec 			: std_logic;
+	signal scl_oe				: std_logic;
+	signal ina					: std_logic;
+	signal sda_in				: std_logic;
+	signal ready				: std_logic;
+	signal start				: std_logic;
+	signal stop					: std_logic;
+	signal data_in				: std_logic_vector(7 downto 0);
+	signal data_out			: std_logic_vector(7 downto 0);
+	signal r_w					: std_logic;
+	signal data_vld			: std_logic;
+	signal sda_oe				: std_logic;
+	signal usb_fs				: std_logic_vector(3 downto 0);
+	signal usb_dp				: std_logic;
+	signal usb_d64				: std_logic;
+	signal det_fs				: std_logic_vector(3 downto 0);
+	signal det_dp				: std_logic;
+	signal det_d256			: std_logic;
+	signal det_d64				: std_logic;
+	signal xdsd					: std_logic;
+	signal imclk1				: std_logic;
+	signal ibclk1				: std_logic;
+	signal ilrck1				: std_logic;
+	signal ck_sel				: std_logic;
+	signal ov96k				: std_logic;
+	signal id256_512			: std_logic;
+	signal id64_128			: std_logic;
+	signal idp					: std_logic;
+	signal ifs					: std_logic_vector(3 downto 0);
+	signal ibclk2				: std_logic;
+	signal imclk2				: std_logic;
+	signal mclken				: std_logic;
+	signal bck16				: std_logic;
+	signal DIV_BBB_MCLK		: std_logic;
+	signal ex_mclk				: std_logic;
+	signal rsv2i				: std_logic;
+	signal mclkeni				: std_logic;
+	signal selectSource		: std_logic_vector(1 downto 0);
+	signal idata1				: std_logic;
+	signal inselo				: std_logic_vector(1 downto 0);
+	signal sda_out				: std_logic;
+	signal scl_out				: std_logic;
+	signal bck_dsdck			: std_logic;
+	signal lrck_dsdr			: std_logic;
+	signal data_dsdl			: std_logic;
+	signal dop_valid			: std_logic;
+	signal dop_locked			: std_logic;
+	signal DOP_VLD				: std_logic;
+
+	-- ESP32制御信号の同期用
+	signal mute_req_meta  : std_logic;
+	signal mute_req_sync  : std_logic;
+	signal dsd_mode_meta  : std_logic;
+	signal dsd_mode_sync  : std_logic;
+
+	-- DSD無音パターン
+	signal dsd_silence    : std_logic;
 
 begin
 
-scl_out <= '0' when scl_oe = '1' else 'Z';
-sda_out <= 'Z';
-ina <= '0';
+	scl_out <= '0' when scl_oe = '1' else 'Z';
+	sda_out <= 'Z';
+	ina <= '0';
 
-rst <= not xrst;
+	rst <= not xrst;
 
-I1	: i2c_inout port map(
-	a => ina,
-	en => sda_oe,
-	b => sda,
-	c => sda_in
-	);
+	I1	: i2c_inout port map(
+		a => ina,
+		en => sda_oe,
+		b => sda,
+		c => sda_in
+		);
 
-S1	: i2c_slave port map(
-	XRESET => rst,
-	sysclk => clk49m,
-	ready => ready,
-	start => start,
-	stop => stop,
-	data_in => data_out,
-	data_out => data_in,
-	r_w => r_w,
-	data_vld => data_vld,
-	scl_in => scl_in,
-	scl_oe => scl_oe,
-	sda_in => sda_in,
-	sda_oe => sda_oe
-	);
+	S1	: i2c_slave port map(
+		XRESET => rst,
+		sysclk => clk49m,
+		ready => ready,
+		start => start,
+		stop => stop,
+		data_in => data_out,
+		data_out => data_in,
+		r_w => r_w,
+		data_vld => data_vld,
+		scl_in => scl_in,
+		scl_oe => scl_oe,
+		sda_in => sda_in,
+		sda_oe => sda_oe
+		);
 
-R1 : reg_ctrl port map(
-	reset => rst, 
-	sysclk => clk49m, 
-	start => start, 
-	stop => stop, 
-	r_w => r_w, 
-	data_vld => data_vld, 
-	data_in => data_in, 
-	DEM => dem, 
-	DSDD => dsdd, 
-	DSDF=> dsdf, 
-	MONO1 => mono1, 
-	MONO0 => mono0, 
-	DSDSEL1 => dsdsel1, 
-	DSDSEL0 => dsdsel0, 
-	DIF2 => dif2, 
-	DIF1 => dif1, 
-	DIF0 => dif0, 
-	DSDPATH => dsdpath, 
-	GC1 => gc1, 
-	GC0 => gc0, 
-	DEVNAME => devname, 
-	CHLR => chlr, 
-	INSEL => insel, 
-	OPT0 => opt0, 
-	OPT1 => opt1, 
-	PLUGED => pluged, 
-	DOP_VLD => dop_valid,
-	ready => ready,
-	data_out => data_out, 
-	INSELO => inselo,
-	RSV2 => rsv2i, 
-	RSV1 => rsv1, 
-	MCLKEN => mclkeni
-	);
+	R1 : reg_ctrl port map(
+		reset => rst, 
+		sysclk => clk49m, 
+		start => start, 
+		stop => stop, 
+		r_w => r_w, 
+		data_vld => data_vld, 
+		data_in => data_in, 
+		DEM => dem, 
+		DSDD => dsdd, 
+		DSDF=> dsdf, 
+		MONO1 => mono1, 
+		MONO0 => mono0, 
+		DSDSEL1 => dsdsel1, 
+		DSDSEL0 => dsdsel0, 
+		DIF2 => dif2, 
+		DIF1 => dif1, 
+		DIF0 => dif0, 
+		DSDPATH => dsdpath, 
+		GC1 => gc1, 
+		GC0 => gc0, 
+		DEVNAME => devname, 
+		CHLR => chlr, 
+		INSEL => insel, 
+		OPT0 => opt0, 
+		OPT1 => opt1, 
+		PLUGED => pluged, 
+		DOP_VLD => dop_valid,
+		ready => ready,
+		data_out => data_out, 
+		INSELO => inselo,
+		RSV2 => rsv2i, 
+		RSV1 => rsv1, 
+		MCLKEN => mclkeni
+		);
 
-SEL : select_in port map(
-	xrst => xrst, 
-	INSELO => inselo, --selectSource, 
-	BBB_MCLK => ex_mclk, 
-	BBB_BCLK => bbb_bclk, 
-	BBB_LRCK => bbb_lrck, 
-	BBB_DATA => bbb_data, 
-	RJ4_DATA => rj4_data, 
-	RJ4_BCLK => rj4_bclk, 
-	RJ4_LRCK => rj4_lrck, 
-	RJ4_MCLK => rj4_mclk, 
-	USB_DATA => usb_data, 
-	USB_MCLK => usb_mclk, 
-	USB_BCLK => usb_bclk, 
-	USB_LRCK => usb_lrck, 
-	USB_FS => f, 
-	USB_DP => usb_dp, 
-	CHLR => chlr, 
-	LRCK1 => ilrck1,
-	DATA1 => idata1, 
-	BCLK1 => ibclk1, 
-	MCLK1 => imclk1
-	); 
-								  
-DET2 : detdsd port map(
-	xrst => xrst, 
-	mclk => imclk1, 
-	bclk => ibclk1, 
-	lrck => ilrck1, 
-	dp => idp
-	);
+	SEL : select_in port map(
+		xrst => xrst, 
+		INSELO => inselo, --selectSource, 
+		BBB_MCLK => ex_mclk, 
+		BBB_BCLK => bbb_bclk, 
+		BBB_LRCK => bbb_lrck, 
+		BBB_DATA => bbb_data, 
+		RJ4_DATA => rj4_data, 
+		RJ4_BCLK => rj4_bclk, 
+		RJ4_LRCK => rj4_lrck, 
+		RJ4_MCLK => rj4_mclk, 
+		USB_DATA => usb_data, 
+		USB_MCLK => usb_mclk, 
+		USB_BCLK => usb_bclk, 
+		USB_LRCK => usb_lrck, 
+		USB_FS => f, 
+		USB_DP => usb_dp, 
+		CHLR => chlr, 
+		LRCK1 => ilrck1,
+		DATA1 => idata1, 
+		BCLK1 => ibclk1, 
+		MCLK1 => imclk1
+		); 
+									  
+	DET2 : detdsd port map(
+		xrst => xrst, 
+		mclk => imclk1, 
+		bclk => ibclk1, 
+		lrck => ilrck1, 
+		dp => idp
+		);
 
-ESP : espReset PORT map(
-	XRST => xrst, 
-	CLK49M => clk49m, 
-	ESPRST => esprst
-	);
-	
-DOP1 : dop PORT map(
-	xrst => xrst,
-	mclk => imclk1,
-	bclk => ibclk1,
-	lrck => ilrck1,
-	data => idata1,
-	bck_dsdck => bck_dsdck,
-	lrck_dsdr => lrck_dsdr,
-	data_dsdl => data_dsdl,
-	dop_valid => dop_vld,
-	dop_locked => dop_locked
-	);
+	ESP : espReset PORT map(
+		XRST => xrst, 
+		CLK49M => clk49m, 
+		ESPRST => esprst
+		);
+		
+	DOP1 : dop PORT map(
+		xrst => xrst,
+		mclk => imclk1,
+		bclk => ibclk1,
+		lrck => ilrck1,
+		data => idata1,
+		bck_dsdck => bck_dsdck,
+		lrck_dsdr => lrck_dsdr,
+		data_dsdl => data_dsdl,
+		dop_valid => dop_vld,
+		dop_locked => dop_locked
+		);
 
+	-- --------------------------------------------------------------------------
+	-- ESP32からのMUTE_REQ、DSD_MODEをCLK49Mへ同期
+	-- --------------------------------------------------------------------------
+	process(CLK49M, XRST)
+	begin
+	  if XRST = '0' then
+		 -- リセット時は安全側としてミュート
+		 mute_req_meta <= '1';
+		 mute_req_sync <= '1';
 
-BCLK1 <= bck_dsdck;
-BCLK2 <= bck_dsdck;
-LRCK1 <= lrck_dsdr;
-LRCK2 <= lrck_dsdr;
-DATA1 <= data_dsdl;
-DATA2 <= data_dsdl;
+		 dsd_mode_meta <= '0';
+		 dsd_mode_sync <= '0';
 
-DP <= idp;
+	  elsif rising_edge(CLK49M) then
+		 mute_req_meta <= MUTE_REQ;
+		 mute_req_sync <= mute_req_meta;
 
-mclken <= mclkeni or '0';
+		 dsd_mode_meta <= DSD_MODE;
+		 dsd_mode_sync <= dsd_mode_meta;
+	  end if;
+	end process;
 
-process(DEVNAME, idp, ibclk1, imclk1, mclken) begin
-	if (DEVNAME(2 downto 0) = "011") then	-- BD34301EKV
-		if (mclken = '1') then
-			if (idp = '1') then
-				MCLK1 <= ibclk1;
-				MCLK2 <= ibclk1;
+	-- --------------------------------------------------------------------------
+	-- DSDミュート用010101...生成
+	--
+	-- bck_dsdckの各立ち上がりで反転する。
+	-- 0と1の密度が50%になるため、DSDのデジタルゼロとして扱う。
+	-- --------------------------------------------------------------------------
+	process(bck_dsdck, XRST)
+	begin
+	  if XRST = '0' then
+		 dsd_silence <= '0';
+
+	  elsif rising_edge(bck_dsdck) then
+		 if (mute_req_sync = '1') and
+			 (dsd_mode_sync = '1') then
+			dsd_silence <= not dsd_silence;
+		 else
+			dsd_silence <= '0';
+		 end if;
+	  end if;
+	end process;
+
+	-- BCLKはミュート中も停止させない
+	BCLK1 <= bck_dsdck;
+	BCLK2 <= bck_dsdck;
+
+	-- PCMの場合、LRCKは通常どおり通す。
+	-- DSDの場合、LRCK端子は右チャンネルDSDデータなので、
+	-- ミュート中は010101...へ置き換える。
+	LRCK1 <= dsd_silence
+				when (mute_req_sync = '1' and
+						dsd_mode_sync = '1')
+				else lrck_dsdr;
+
+	LRCK2 <= dsd_silence
+				when (mute_req_sync = '1' and
+						dsd_mode_sync = '1')
+				else lrck_dsdr;
+
+	-- PCMミュート：DATAを0固定
+	-- DSDミュート：左チャンネルDSDを010101...へ置換
+	DATA1 <= '0'
+				when (mute_req_sync = '1' and
+						dsd_mode_sync = '0')
+				else dsd_silence
+				when (mute_req_sync = '1' and
+						dsd_mode_sync = '1')
+				else data_dsdl;
+
+	DATA2 <= '0'
+				when (mute_req_sync = '1' and
+						dsd_mode_sync = '0')
+				else dsd_silence
+				when (mute_req_sync = '1' and
+						dsd_mode_sync = '1')
+				else data_dsdl;
+	  
+
+	DP <= idp;
+
+	mclken <= mclkeni or '0';
+
+	process(DEVNAME, idp, ibclk1, imclk1, mclken) begin
+		if (DEVNAME(2 downto 0) = "011") then	-- BD34301EKV
+			if (mclken = '1') then
+				if (idp = '1') then
+					MCLK1 <= ibclk1;
+					MCLK2 <= ibclk1;
+				else
+					MCLK1 <= imclk1;
+					MCLK2 <= imclk1;
+				end if;
 			else
-				MCLK1 <= imclk1;
-				MCLK2 <= imclk1;
+				MCLK1 <= '0';
+				MCLK2 <= '0';
 			end if;
 		else
-			MCLK1 <= '0';
-			MCLK2 <= '0';
+			MCLK1 <= imclk1;
+			MCLK2 <= imclk1;
 		end if;
-	else
-		MCLK1 <= imclk1;
-		MCLK2 <= imclk1;
-	end if;
-end process;
+	end process;
 
-process(BBB_MCLK, xrst) begin
-	if (xrst = '0') then
-		DIV_BBB_MCLK <= '0';
-	elsif (BBB_MCLK'event and BBB_MCLK='1') then
-		DIV_BBB_MCLK <= not DIV_BBB_MCLK;
-	end if;
-end process;
+	process(BBB_MCLK, xrst) begin
+		if (xrst = '0') then
+			DIV_BBB_MCLK <= '0';
+		elsif (BBB_MCLK'event and BBB_MCLK='1') then
+			DIV_BBB_MCLK <= not DIV_BBB_MCLK;
+		end if;
+	end process;
 
-ex_mclk <= BBB_MCLK when insel(0) = '1' else DIV_BBB_MCLK;
+	ex_mclk <= BBB_MCLK when insel(0) = '1' else DIV_BBB_MCLK;
 
-rsv2 <= '0' or rsv2i;
+	rsv2 <= '0' or rsv2i;
 
-BCLK_ESP <= bck_dsdck;
-LRCK_ESP <= lrck_dsdr;
+	BCLK_ESP <= bck_dsdck;
+	LRCK_ESP <= lrck_dsdr;
 
 end RTL;
