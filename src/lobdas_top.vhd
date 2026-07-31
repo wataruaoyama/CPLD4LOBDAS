@@ -455,7 +455,7 @@ begin
 	-- ミュート中は010101...へ置き換える。
 	LRCK1 <= dsd_silence
 				when (mute_req_sync = '1' and
-						dsd_mode_sync = '1')
+						idp = '1')
 				else lrck_dsdr;
 
 	LRCK2 <= dsd_silence
