@@ -47,7 +47,7 @@ PORT(
 --	scl_out	: out std_logic;
 	sda		: inout std_logic;
 --	sda_out	: out std_logic;	-- dummy pin
-	DP			: out std_logic;
+--	DP			: out std_logic;
 	LRCK1		: out std_logic;
 	DATA1		: out std_logic;
 	BCLK1		: out std_logic;
@@ -57,7 +57,8 @@ PORT(
 	BCLK2		: out std_logic;
 	MCLK2		: out std_logic;
 	RSV2		: out std_logic;
-	RSV1		: out std_logic;
+--	RSV1		: out std_logic;
+	dsd_mode_out	: out std_logic;
 	
 -- ESP32 GPIO26から入力
 -- Highでデジタルミュート
@@ -284,6 +285,8 @@ ARCHITECTURE RTL OF lobdas_top IS
 
 	-- DSD無音パターン
 	signal dsd_silence    : std_logic;
+	
+	signal rsv1	: std_logic;
 
 begin
 
@@ -376,13 +379,13 @@ begin
 		MCLK1 => imclk1
 		); 
 									  
-	DET2 : detdsd port map(
-		xrst => xrst, 
-		mclk => imclk1, 
-		bclk => ibclk1, 
-		lrck => ilrck1, 
-		dp => idp
-		);
+--	DET2 : detdsd port map(
+--		xrst => xrst, 
+--		mclk => imclk1, 
+--		bclk => ibclk1, 
+--		lrck => ilrck1, 
+--		dp => idp
+--		);
 
 	ESP : espReset PORT map(
 		XRST => xrst, 
@@ -436,7 +439,7 @@ begin
 	  if XRST = '0' then
 		 dsd_silence <= '0';
 
-	  elsif rising_edge(bck_dsdck) then
+	  elsif falling_edge(bck_dsdck) then
 		 if (mute_req_sync = '1') and
 			 (dsd_mode_sync = '1') then
 			dsd_silence <= not dsd_silence;
@@ -455,7 +458,7 @@ begin
 	-- ミュート中は010101...へ置き換える。
 	LRCK1 <= dsd_silence
 				when (mute_req_sync = '1' and
-						idp = '1')
+						dsd_mode_sync = '1')
 				else lrck_dsdr;
 
 	LRCK2 <= dsd_silence
@@ -482,14 +485,14 @@ begin
 				else data_dsdl;
 	  
 
-	DP <= idp;
+--	DP <= idp;
 
 	mclken <= mclkeni or '0';
 
-	process(DEVNAME, idp, ibclk1, imclk1, mclken) begin
+	process(DEVNAME, dsd_mode_sync, ibclk1, imclk1, mclken) begin
 		if (DEVNAME(2 downto 0) = "011") then	-- BD34301EKV
 			if (mclken = '1') then
-				if (idp = '1') then
+				if (dsd_mode_sync = '1') then
 					MCLK1 <= ibclk1;
 					MCLK2 <= ibclk1;
 				else
@@ -520,5 +523,7 @@ begin
 
 	BCLK_ESP <= bck_dsdck;
 	LRCK_ESP <= lrck_dsdr;
+	
+	dsd_mode_out <= dsd_silence;
 
 end RTL;
