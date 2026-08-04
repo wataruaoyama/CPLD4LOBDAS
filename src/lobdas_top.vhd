@@ -62,11 +62,11 @@ PORT(
 	
 -- ESP32 GPIO26から入力
 -- Highでデジタルミュート
-	MUTE_REQ	: in std_logic;
+--	MUTE_REQ	: in std_logic;
 	
 -- ESP32 GPIO33から入力
 -- High=DSD、Low=PCM
-	DSD_MODE : in std_logic;
+--	DSD_MODE : in std_logic;
 	
 	BCLK_ESP	: out std_logic;
 	LRCK_ESP	: out std_logic;
@@ -139,34 +139,11 @@ ARCHITECTURE RTL OF lobdas_top IS
 		INSELO	: out std_logic_vector(1 downto 0);
 		RSV2		: out std_logic;
 		RSV1		: out std_logic;
-		MCLKEN	: out std_logic
+		MCLKEN	: out std_logic;
+		MUTE_REQ : out std_logic;
+		DSD_MODE : out std_logic
 	);
 	end component;
-
-	component detect_fs
-	PORT(
-			CLK49M		: in std_logic;
-			XDSD			: in std_logic;
-			MCLK			: in std_logic;
-			BCK			: in std_logic;
-			LRCK			: in std_logic;
-			CK_SEL		: in std_logic;
-			CPOK			: IN std_logic;
-			DSD64_128	: OUT std_logic;
-			DSD256_512	: OUT std_logic;
-			FS				: OUT std_logic_vector(3 downto 0)
-			);
-	END component;
-
-	component detdsd
-	PORT(
-			xrst			: in std_logic;
-			mclk			: in std_logic;
-			bclk			: in std_logic;
-			lrck			: in std_logic;
-			dp				: out std_logic
-	);
-	END component;
 
 	component dop
 	PORT(
@@ -206,16 +183,6 @@ ARCHITECTURE RTL OF lobdas_top IS
 			DATA1		: out std_logic;
 			BCLK1		: out std_logic;
 			MCLK1		: out std_logic
-	);
-	END component;
-
-	component fs44_48
-	PORT(
-			XRST			: in std_logic;
-			CLK49M		: in std_logic;
-			XDSD			: in std_logic;
-			LRCK			: in std_logic;
-			CK_SEL		: out std_logic
 	);
 	END component;
 
@@ -287,6 +254,9 @@ ARCHITECTURE RTL OF lobdas_top IS
 	signal dsd_silence    : std_logic;
 	
 	signal rsv1	: std_logic;
+	
+	signal mute_req : std_logic;
+	signal dsd_mode : std_logic;
 
 begin
 
@@ -352,7 +322,9 @@ begin
 		INSELO => inselo,
 		RSV2 => rsv2i, 
 		RSV1 => rsv1, 
-		MCLKEN => mclkeni
+		MCLKEN => mclkeni,
+		MUTE_REQ => mute_req,
+		DSD_MODE => dsd_mode
 		);
 
 	SEL : select_in port map(
@@ -378,14 +350,7 @@ begin
 		BCLK1 => ibclk1, 
 		MCLK1 => imclk1
 		); 
-									  
---	DET2 : detdsd port map(
---		xrst => xrst, 
---		mclk => imclk1, 
---		bclk => ibclk1, 
---		lrck => ilrck1, 
---		dp => idp
---		);
+
 
 	ESP : espReset PORT map(
 		XRST => xrst, 
@@ -406,27 +371,9 @@ begin
 		dop_locked => dop_locked
 		);
 
-	-- --------------------------------------------------------------------------
-	-- ESP32からのMUTE_REQ、DSD_MODEをCLK49Mへ同期
-	-- --------------------------------------------------------------------------
-	process(CLK49M, XRST)
-	begin
-	  if XRST = '0' then
-		 -- リセット時は安全側としてミュート
-		 mute_req_meta <= '1';
-		 mute_req_sync <= '1';
-
-		 dsd_mode_meta <= '0';
-		 dsd_mode_sync <= '0';
-
-	  elsif rising_edge(CLK49M) then
-		 mute_req_meta <= MUTE_REQ;
-		 mute_req_sync <= mute_req_meta;
-
-		 dsd_mode_meta <= DSD_MODE;
-		 dsd_mode_sync <= dsd_mode_meta;
-	  end if;
-	end process;
+	
+	mute_req_sync <= mute_req;
+	dsd_mode_sync <= dsd_mode;
 
 	-- --------------------------------------------------------------------------
 	-- DSDミュート用010101...生成
@@ -484,8 +431,6 @@ begin
 						dsd_mode_sync = '1')
 				else data_dsdl;
 	  
-
---	DP <= idp;
 
 	mclken <= mclkeni or '0';
 

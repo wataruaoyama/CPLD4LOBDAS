@@ -41,7 +41,9 @@ PORT(
     INSELO   : out std_logic_Vector(1 downto 0);
     RSV2     : out std_logic;
     RSV1     : out std_logic;
-    MCLKEN   : out std_logic
+    MCLKEN   : out std_logic;
+	 MUTE_REQ : out std_logic;
+	 DSD_MODE : out std_logic
 );
 END reg_ctrl;
 
@@ -164,8 +166,10 @@ BEGIN
     INSELO(1) <= wr_reg0(4);
     INSELO(0) <= wr_reg0(3);
 
-    RSV2   <= wr_reg3(7);
-    RSV1   <= wr_reg3(6);
+    RSV2	<= wr_reg3(7);
+    RSV1 <= wr_reg3(6);
+	 DSD_MODE <= wr_reg3(2);
+	 MUTE_REQ <= wr_reg3(1);
     MCLKEN <= wr_reg3(0);
 
 

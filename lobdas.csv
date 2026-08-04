@@ -15,7 +15,7 @@
 
 # Quartus Prime Version 20.1.1 Build 720 11/11/2020 SJ Lite Edition
 # File: /media/psf/Dropbox/altera/VHDL/LOGBAS/lobdas.csv
-# Generated on: Fri Jul 24 15:33:11 2026
+# Generated on: Tue Aug  4 17:22:00 2026
 
 # Note: The column header names should not be changed if you wish to import this .csv file into the Quartus Prime software.
 
@@ -39,7 +39,7 @@ DEVNAME[0],Input,PIN_76,2,PIN_76,3.3-V LVTTL,,,,,on
 DIF0,Input,PIN_85,2,PIN_85,3.3-V LVTTL,,,,,on
 DIF1,Input,PIN_86,2,PIN_86,3.3-V LVTTL,,,,,on
 DIF2,Input,PIN_89,2,PIN_89,3.3-V LVTTL,,,,,on
-DP,Output,PIN_15,1,PIN_15,3.3-V LVTTL,,,,,
+dsd_mode_out,Output,PIN_35,1,PIN_35,3.3-V LVTTL,,,,,
 DSDD,Input,PIN_99,2,PIN_99,3.3-V LVTTL,,,,,on
 DSDF,Input,PIN_98,2,PIN_98,3.3-V LVTTL,,,,,on
 DSDON,Input,PIN_56,2,PIN_56,3.3-V LVCMOS,,,,,
@@ -70,12 +70,9 @@ RJ4_DATA,Input,PIN_18,1,PIN_18,3.3-V LVTTL,,,,,on
 RJ4_LRCK,Input,PIN_20,1,PIN_20,3.3-V LVTTL,,,,,on
 RJ4_MCLK,Input,PIN_21,1,PIN_21,3.3-V LVTTL,,,,,on
 RJ45_MUTE,Input,PIN_16,1,PIN_16,3.3-V LVTTL,,,,,
-RSV1,Output,PIN_35,1,PIN_35,3.3-V LVTTL,,,,,
 RSV2,Output,PIN_36,1,PIN_36,3.3-V LVTTL,,,,,
 scl_in,Input,PIN_2,1,PIN_2,3.3-V LVCMOS,,,,,
 sda,Bidir,PIN_3,1,PIN_3,3.3-V LVCMOS,,,,,
-TP3,Input,,,PIN_69,,,,,,
-TP6,Input,,,PIN_30,,,,,,
 USB_BCLK,Input,PIN_50,1,PIN_50,3.3-V LVCMOS,,,,,on
 USB_DATA,Input,PIN_49,1,PIN_49,3.3-V LVCMOS,,,,,on
 USB_LRCK,Input,PIN_53,2,PIN_53,3.3-V LVCMOS,,,,,on
